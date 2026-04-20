@@ -457,17 +457,77 @@ st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 # ==============================================================================
 if st.session_state.stage == "input":
     st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Step 1 of 3 &nbsp;&mdash;&nbsp; Acoustic Capture</div>', unsafe_allow_html=True)
-    st.markdown('<div class="ds-section">Upload your car sound</div>', unsafe_allow_html=True)
-    st.markdown('<div class="ds-section-sub">Upload an engine, brake, belt, steering, or vehicle sound recording to begin the diagnostic screening workflow.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="ds-card">Supported formats: <b>WAV &middot; MP3 &middot; M4A</b> &nbsp;&mdash;&nbsp; Record near the sound source for best accuracy.</div>', unsafe_allow_html=True)
-    audio_data = st.file_uploader("Upload vehicle recording", type=["wav","mp3","m4a"], label_visibility="collapsed")
-    if audio_data is not None:
-        st.markdown(f"""<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:10px 0 12px;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span><span style="color:#6ee7b7;font-size:16px;font-weight:700;">{audio_data.name}</span></div>""", unsafe_allow_html=True)
-        st.audio(audio_data)
-        if st.session_state.get("uploaded_filename") != audio_data.name:
-            temp_path = save_uploaded_file_temporarily(audio_data)
-            st.session_state.uploaded_temp_path = temp_path
-            st.session_state.uploaded_filename  = audio_data.name
+    st.markdown('<div class="ds-section">Capture your car sound</div>', unsafe_allow_html=True)
+    st.markdown('<div class="ds-section-sub">Record live using your phone microphone or upload an existing audio file.</div>', unsafe_allow_html=True)
+
+    tab_record, tab_upload = st.tabs(["\U0001f3a4 Record Live", "\U0001f4c1 Upload File"])
+    audio_data = None
+
+    with tab_record:
+        st.markdown('<div class="ds-card">Tap <b>Start Recording</b>, hold your phone near the car, then tap <b>Stop</b>. Download the file, then upload it in the Upload tab.</div>', unsafe_allow_html=True)
+        st.components.v1.html("""
+        <style>
+        #recBtn{background:#2563eb;color:#fff;border:none;border-radius:12px;font-size:16px;
+                font-weight:800;padding:14px 0;cursor:pointer;width:100%;margin-bottom:12px;font-family:sans-serif}
+        #recBtn.stop{background:#ef4444}
+        #recStatus{color:#94a3b8;font-size:13px;font-family:monospace;margin-bottom:10px;text-align:center}
+        #audioPlayback{width:100%;border-radius:10px;margin-top:8px}
+        #dlWrap{margin-top:10px;display:none}
+        #dlBtn{display:block;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);
+               border-radius:10px;padding:12px;color:#34d399;font-size:13px;font-weight:700;
+               font-family:monospace;text-align:center;text-decoration:none}
+        </style>
+        <button id="recBtn" onclick="toggleRec()">&#127908; Start Recording</button>
+        <div id="recStatus">Tap to start recording from your microphone</div>
+        <audio id="audioPlayback" controls style="display:none"></audio>
+        <div id="dlWrap"><a id="dlBtn" download="car_recording.wav">&#11015;&#65039; Download recording</a></div>
+        <script>
+        let mr, chunks=[], running=false;
+        async function toggleRec(){
+            const btn=document.getElementById("recBtn");
+            const st=document.getElementById("recStatus");
+            if(!running){
+                chunks=[];
+                const stream=await navigator.mediaDevices.getUserMedia({audio:true,sampleRate:22050});
+                mr=new MediaRecorder(stream);
+                mr.ondataavailable=e=>chunks.push(e.data);
+                mr.onstop=()=>{
+                    const blob=new Blob(chunks,{type:"audio/wav"});
+                    const url=URL.createObjectURL(blob);
+                    const player=document.getElementById("audioPlayback");
+                    player.src=url; player.style.display="block";
+                    const dl=document.getElementById("dlBtn");
+                    dl.href=url;
+                    document.getElementById("dlWrap").style.display="block";
+                    st.textContent="\u2705 Recording complete — download then upload in Upload tab";
+                    stream.getTracks().forEach(t=>t.stop());
+                };
+                mr.start();
+                running=true;
+                btn.textContent="\u23f9\uFE0F Stop Recording";
+                btn.className="stop";
+                st.textContent="\uD83D\uDD34 Recording... hold phone near car sound";
+            } else {
+                mr.stop(); running=false;
+                btn.textContent="\uD83C\uDFA4 Start Recording";
+                btn.className="";
+            }
+        }
+        </script>
+        """, height=220)
+        st.info("After recording: **download the file** → switch to **Upload File** tab → upload it → tap **Run Diagnostic Scan**")
+
+    with tab_upload:
+        st.markdown('<div class="ds-card">Supported formats: <b>WAV &middot; MP3 &middot; M4A</b> &nbsp;&mdash;&nbsp; Record near the sound source for best accuracy.</div>', unsafe_allow_html=True)
+        audio_data = st.file_uploader("Upload vehicle recording", type=["wav","mp3","m4a"], label_visibility="collapsed")
+        if audio_data is not None:
+            st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:10px 0 12px;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span><span style="color:#6ee7b7;font-size:16px;font-weight:700;">{audio_data.name}</span></div>''', unsafe_allow_html=True)
+            st.audio(audio_data)
+            if st.session_state.get("uploaded_filename") != audio_data.name:
+                temp_path = save_uploaded_file_temporarily(audio_data)
+                st.session_state.uploaded_temp_path = temp_path
+                st.session_state.uploaded_filename  = audio_data.name
+
     st.markdown("<br>", unsafe_allow_html=True)
     if audio_data and st.button("Run Diagnostic Scan \u2192"):
         with st.spinner("Processing acoustic signal..."):
@@ -487,9 +547,6 @@ if st.session_state.stage == "input":
             except Exception as e:
                 st.error(f"Prediction failed: {e}")
 
-# ==============================================================================
-# 15. STAGE 2A: LOW CONFIDENCE
-# ==============================================================================
 elif st.session_state.stage == "low_confidence":
     st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Step 2 of 3 &nbsp;&mdash;&nbsp; Review Candidates</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section">Review Candidate Classes</div>', unsafe_allow_html=True)
