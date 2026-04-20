@@ -486,25 +486,35 @@ if st.session_state.stage == "input":
         st.markdown("""
         <style>
         div[data-testid="stAudioInput"]{
-            display:flex!important;flex-direction:column!important;
-            align-items:center!important;justify-content:center!important;
-            background:transparent!important;border:none!important;padding:20px 0!important}
+            background:transparent!important;border:none!important;
+            padding:0!important;margin:0 auto!important;
+            display:block!important;width:100%!important}
         div[data-testid="stAudioInput"] > div{
-            display:flex!important;flex-direction:column!important;
-            align-items:center!important;width:auto!important}
+            background:transparent!important;border:none!important;
+            display:flex!important;justify-content:center!important;
+            align-items:center!important;width:100%!important}
+        div[data-testid="stAudioInput"] > div > div{
+            background:transparent!important;border:none!important;
+            box-shadow:none!important;padding:0!important;
+            display:flex!important;justify-content:center!important}
         div[data-testid="stAudioInput"] button{
-            width:90px!important;height:90px!important;border-radius:50%!important;
-            background:#2563eb!important;border:3px solid rgba(59,130,246,0.3)!important;
-            box-shadow:0 6px 24px rgba(37,99,235,0.4)!important;
-            min-width:0!important;flex:none!important}
-        div[data-testid="stAudioInput"] button svg{width:34px!important;height:34px!important}
-        div[data-testid="stAudioInput"] [data-testid="stAudioInputWaveform"]{display:none!important}
+            width:90px!important;height:90px!important;
+            min-width:90px!important;min-height:90px!important;
+            border-radius:50%!important;
+            background:#2563eb!important;
+            border:3px solid rgba(59,130,246,0.3)!important;
+            box-shadow:0 6px 24px rgba(37,99,235,0.45)!important;
+            padding:0!important}
+        div[data-testid="stAudioInput"] button:hover{background:#1d4ed8!important}
+        div[data-testid="stAudioInput"] button svg{
+            width:36px!important;height:36px!important;color:white!important}
+        div[data-testid="stAudioInputWaveform"]{display:none!important}
         </style>
-        <div style="text-align:center;padding:16px 0 4px;">
-            <div style="font-size:17px;font-weight:800;color:#f1f5f9;
-                        font-family:'Syne',sans-serif;margin-bottom:4px;">Tap to record</div>
+        <div style="text-align:center;padding:20px 0 12px;">
+            <div style="font-size:18px;font-weight:800;color:#f1f5f9;
+                        font-family:'Syne',sans-serif;margin-bottom:5px;">Tap to record</div>
             <div style="font-size:11px;color:#475569;font-family:'IBM Plex Mono',monospace;
-                        letter-spacing:1.5px;text-transform:uppercase;">
+                        letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;">
                 Hold phone near car sound</div>
         </div>
         """, unsafe_allow_html=True)
