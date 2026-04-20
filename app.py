@@ -28,8 +28,8 @@ WINDOW_SAMPLES = int(TARGET_SR * WINDOW_SECONDS)
 CONFIDENCE_THRESHOLD = 0.60
 
 BASE_DIR         = Path(__file__).resolve().parent
-MODEL_PATH       = BASE_DIR / "models" / "project_milo_final_classifier.joblib"
-ENCODER_PATH     = BASE_DIR / "models" / "project_milo_label_encoder.joblib"
+MODEL_PATH       = BASE_DIR / "project_milo_final_classifier.joblib"
+ENCODER_PATH     = BASE_DIR / "project_milo_label_encoder.joblib"
 REFERENCE_ROOT   = BASE_DIR / "reference_audio"
 FEEDBACK_ROOT    = BASE_DIR / "feedback_audio"
 FEEDBACK_LOG_CSV = BASE_DIR / "feedback_log_project_milo.csv"
