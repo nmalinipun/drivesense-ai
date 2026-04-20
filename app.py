@@ -472,6 +472,7 @@ with st.expander("\U0001f697  Vehicle Profile  —  tap to set make, model & yea
 st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
 # ==============================================================================
+# ==============================================================================
 # 14. STAGE 1: INPUT
 # ==============================================================================
 if st.session_state.stage == "input":
@@ -483,67 +484,39 @@ if st.session_state.stage == "input":
     audio_data = None
 
     with tab_record:
-        st.markdown("""
-        <style>
-        div[data-testid="stAudioInput"]{
-            background:transparent!important;border:none!important;
-            padding:0!important;margin:0 auto!important;
-            display:block!important;width:100%!important}
-        div[data-testid="stAudioInput"] > div{
-            background:transparent!important;border:none!important;
-            display:flex!important;justify-content:center!important;
-            align-items:center!important;width:100%!important}
-        div[data-testid="stAudioInput"] > div > div{
-            background:transparent!important;border:none!important;
-            box-shadow:none!important;padding:0!important;
-            display:flex!important;justify-content:center!important}
-        div[data-testid="stAudioInput"] button{
-            width:90px!important;height:90px!important;
-            min-width:90px!important;min-height:90px!important;
-            border-radius:50%!important;
-            background:#2563eb!important;
-            border:3px solid rgba(59,130,246,0.3)!important;
-            box-shadow:0 6px 24px rgba(37,99,235,0.45)!important;
-            padding:0!important}
-        div[data-testid="stAudioInput"] button:hover{background:#1d4ed8!important}
-        div[data-testid="stAudioInput"] button svg{
-            width:36px!important;height:36px!important;color:white!important}
-        div[data-testid="stAudioInputWaveform"]{display:none!important}
-        </style>
-        <div style="text-align:center;padding:20px 0 12px;">
-            <div style="font-size:18px;font-weight:800;color:#f1f5f9;
-                        font-family:'Syne',sans-serif;margin-bottom:5px;">Tap to record</div>
-            <div style="font-size:11px;color:#475569;font-family:'IBM Plex Mono',monospace;
-                        letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;">
-                Hold phone near car sound</div>
-        </div>
-        """, unsafe_allow_html=True)
-        recorded_audio = st.audio_input("Record car sound", label_visibility="collapsed")
+        col_l, col_c, col_r = st.columns([1,2,1])
+        with col_c:
+            st.markdown("""
+            <div style="text-align:center;padding:24px 0 8px;">
+                <div style="font-size:18px;font-weight:800;color:#f1f5f9;
+                            font-family:'Syne',sans-serif;margin-bottom:5px;">Tap to record</div>
+                <div style="font-size:11px;color:#475569;font-family:'IBM Plex Mono',monospace;
+                            letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">
+                    Hold phone near car sound</div>
+            </div>
+            """, unsafe_allow_html=True)
+            recorded_audio = st.audio_input("Record", label_visibility="collapsed")
         if recorded_audio is not None:
             audio_data = recorded_audio
-            st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:10px 0 12px;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span><span style="color:#6ee7b7;font-size:16px;font-weight:700;">Recording captured</span></div>''', unsafe_allow_html=True)
-            st.audio(recorded_audio)
+            st.markdown('''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:10px 16px;margin:8px 0;text-align:center;color:#34d399;font-size:14px;font-weight:700;font-family:'IBM Plex Mono',monospace;">&#10003; Recording captured — tap Run Diagnostic Scan below</div>''', unsafe_allow_html=True)
             if st.session_state.get("uploaded_filename") != "live_recording.wav":
                 temp_path = save_uploaded_file_temporarily(recorded_audio)
                 st.session_state.uploaded_temp_path = temp_path
-                st.session_state.uploaded_filename  = "live_recording.wav"
+                st.session_state.uploaded_filename = "live_recording.wav"
         else:
             audio_data = None
 
     with tab_upload:
-        st.markdown('''<div style="border:2px dashed rgba(59,130,246,0.4);border-radius:14px;padding:20px 24px 14px;margin-bottom:14px;text-align:center">
-            <div style="font-size:28px;margin-bottom:8px">&#128190;</div>
-            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:4px">Drop audio file here or browse</div>
-            <div style="font-size:12px;color:#475569;font-family:IBM Plex Mono,monospace;letter-spacing:1px">WAV &middot; MP3 &middot; M4A</div>
-        </div>''', unsafe_allow_html=True)
-        audio_data = st.file_uploader("Choose audio file", type=["wav","mp3","m4a"], label_visibility="hidden")
-        if audio_data is not None:
-            st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:10px 0 12px;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span><span style="color:#6ee7b7;font-size:16px;font-weight:700;">{audio_data.name}</span></div>''', unsafe_allow_html=True)
-            st.audio(audio_data)
-            if st.session_state.get("uploaded_filename") != audio_data.name:
-                temp_path = save_uploaded_file_temporarily(audio_data)
+        st.markdown('''<div style="border:2px dashed rgba(59,130,246,0.4);border-radius:14px;padding:24px;margin-bottom:12px;text-align:center;"><div style="font-size:32px;margin-bottom:8px">&#128190;</div><div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:4px;">Drop audio file here or browse</div><div style="font-size:12px;color:#475569;font-family:IBM Plex Mono,monospace;letter-spacing:1px;">WAV &middot; MP3 &middot; M4A</div></div>''', unsafe_allow_html=True)
+        uploaded = st.file_uploader("Choose audio file", type=["wav","mp3","m4a"], label_visibility="collapsed")
+        if uploaded is not None:
+            audio_data = uploaded
+            st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:8px 0;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:20px;">&#10003;</span><span style="color:#6ee7b7;font-size:15px;font-weight:700;">{uploaded.name}</span></div>''', unsafe_allow_html=True)
+            st.audio(uploaded)
+            if st.session_state.get("uploaded_filename") != uploaded.name:
+                temp_path = save_uploaded_file_temporarily(uploaded)
                 st.session_state.uploaded_temp_path = temp_path
-                st.session_state.uploaded_filename  = audio_data.name
+                st.session_state.uploaded_filename = uploaded.name
 
     st.markdown("<br>", unsafe_allow_html=True)
     if audio_data and st.button("Run Diagnostic Scan \u2192"):
@@ -556,7 +529,7 @@ if st.session_state.stage == "input":
                 top_indices = result["top_indices"]
                 top_idx     = int(top_indices[0])
                 top_prob    = float(mean_probs[top_idx])
-                st.session_state.result = {"mean_probs":mean_probs,"top_indices":top_indices,"top_idx":top_idx,"top_prob":top_prob,"num_windows":result["num_windows"],"duration_sec":result["duration_sec"],"all_probs":result["all_probs"],"audio_name":getattr(audio_data,"name","uploaded_audio"),"vehicle":{"make":v_make,"model":v_model,"year":v_year,"miles":v_miles}}
+                st.session_state.result = {"mean_probs":mean_probs,"top_indices":top_indices,"top_idx":top_idx,"top_prob":top_prob,"num_windows":result["num_windows"],"duration_sec":result["duration_sec"],"all_probs":result["all_probs"],"audio_name":getattr(audio_data,"name","live_recording.wav"),"vehicle":{"make":v_make,"model":v_model,"year":v_year,"miles":v_miles}}
                 st.session_state.selected_reference_class = encoder.classes_[top_indices[0]]
                 st.session_state.selected_reference_clips = []
                 st.session_state.stage = "low_confidence" if top_prob < CONFIDENCE_THRESHOLD else "refine"
