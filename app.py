@@ -491,7 +491,7 @@ def do_restart():
     st.session_state.saved_feedback_path=None
 
 # ==============================================================================
-# 11. SIDEBAR
+# 11. CAR DATA + SESSION DEFAULTS
 # ==============================================================================
 car_data = {
     "Audi":["A3","A4","A6","Q5","Q7"],
@@ -512,41 +512,67 @@ car_data = {
 }
 year_options = list(range(2026, 1995, -1))
 
+# Keep sidebar minimal — just the logo
 with st.sidebar:
+    LOGO_PATH = BASE_DIR / "drivesense_icon.png"
+    if LOGO_PATH.exists():
+        st.image(str(LOGO_PATH), width=60)
     st.markdown("""
-    <div class="ds-logo-wrap">
-        <div class="ds-logo-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-                <rect x="3"  y="8"  width="3" height="8"  rx="1.5"/>
-                <rect x="8"  y="5"  width="3" height="14" rx="1.5"/>
-                <rect x="13" y="3"  width="3" height="18" rx="1.5"/>
-                <rect x="18" y="7"  width="3" height="10" rx="1.5"/>
-            </svg>
+    <div style="margin-top:8px;">
+        <div class="ds-logo-name">Drive<span style="color:#3b82f6">Sense</span>
+            <span style="color:#3b82f6;font-size:14px;vertical-align:super"> AI</span>
         </div>
-        <div>
-            <div class="ds-logo-name">Drive<span style="color:#3b82f6">Sense</span>
-                <span style="color:#3b82f6;font-size:14px;vertical-align:super"> AI</span>
-            </div>
-            <div class="ds-logo-sub">Sound Diagnosis</div>
-        </div>
+        <div class="ds-logo-sub">Sound Diagnosis</div>
     </div>
-    <div style="font-size:11px;font-weight:700;color:#334155;font-family:IBM Plex Mono,monospace;
-                text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;">Vehicle Profile</div>
     """, unsafe_allow_html=True)
 
+# ==============================================================================
+# 12. MAIN HEADER + VEHICLE PROFILE EXPANDER
+# ==============================================================================
+
+# Header with PNG logo
+col_logo, col_title = st.columns([1, 6])
+with col_logo:
+    LOGO_PATH = BASE_DIR / "drivesense_icon.png"
+    if LOGO_PATH.exists():
+        st.image(str(LOGO_PATH), width=72)
+    else:
+        st.markdown("""
+        <div style="width:72px;height:72px;border-radius:50%;background:#2563eb;
+                    display:flex;align-items:center;justify-content:center;">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="white">
+                <rect x="3" y="8" width="3" height="8" rx="1.5"/>
+                <rect x="8" y="5" width="3" height="14" rx="1.5"/>
+                <rect x="13" y="3" width="3" height="18" rx="1.5"/>
+                <rect x="18" y="7" width="3" height="10" rx="1.5"/>
+            </svg>
+        </div>""", unsafe_allow_html=True)
+with col_title:
+    st.markdown('<div class="ds-page-title">Drive<span style="color:#3b82f6">Sense</span> AI</div>', unsafe_allow_html=True)
+    st.markdown('<div class="ds-page-subtitle">AI-Enabled Car Diagnosis</div>', unsafe_allow_html=True)
+
+# Vehicle Profile — collapsible expander (mobile friendly)
+with st.expander("🚗 Vehicle Profile — tap to set your car", expanded=False):
     sorted_makes       = sorted(car_data.keys())
     default_make_index = sorted_makes.index("Lexus") if "Lexus" in sorted_makes else 0
-    v_make = st.selectbox("Make", sorted_makes, index=default_make_index)
 
-    default_model_index = 0
-    if v_make == "Lexus" and "ES350" in car_data[v_make]:
-        default_model_index = car_data[v_make].index("ES350")
-    v_model = st.selectbox("Model", car_data[v_make], index=default_model_index)
+    col1, col2 = st.columns(2)
+    with col1:
+        v_make = st.selectbox("Make", sorted_makes, index=default_make_index)
+    with col2:
+        default_model_index = 0
+        if v_make == "Lexus" and "ES350" in car_data[v_make]:
+            default_model_index = car_data[v_make].index("ES350")
+        v_model = st.selectbox("Model", car_data[v_make], index=default_model_index)
 
-    default_year_index = year_options.index(2008) if 2008 in year_options else 0
-    v_year  = st.selectbox("Year", year_options, index=default_year_index)
-    v_miles = st.select_slider("Mileage", options=list(range(0, 250001, 5000)), value=160000)
+    col3, col4 = st.columns(2)
+    with col3:
+        default_year_index = year_options.index(2008) if 2008 in year_options else 0
+        v_year = st.selectbox("Year", year_options, index=default_year_index)
+    with col4:
+        v_miles = st.select_slider("Mileage", options=list(range(0, 250001, 5000)), value=160000)
 
+    # Risk badge
     age = 2026 - v_year
     if age >= 15 or v_miles >= 150000:
         risk_class, risk_label = "ds-risk-high",   "HIGH RISK"
@@ -556,43 +582,26 @@ with st.sidebar:
         risk_class, risk_label = "ds-risk-low",    "LOW RISK"
 
     st.markdown(f"""
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
-                border-radius:14px;padding:14px 16px;margin-top:16px;">
-        <div style="font-size:10px;font-weight:700;color:#334155;font-family:'IBM Plex Mono',monospace;
-                    text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">Vehicle Risk</div>
-        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:6px;">
-            <span style="color:#475569;">Age</span>
-            <span style="color:#f1f5f9;">{age} yrs</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:14px;">
-            <span style="color:#475569;">Mileage</span>
-            <span style="color:#f1f5f9;">{v_miles:,} mi</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+                border-radius:12px;padding:12px 16px;margin-top:8px;">
+        <div style="display:flex;gap:20px;">
+            <div>
+                <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
+                            text-transform:uppercase;letter-spacing:1px;">Age</div>
+                <div style="font-size:15px;font-weight:700;color:#f1f5f9;">{age} yrs</div>
+            </div>
+            <div>
+                <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
+                            text-transform:uppercase;letter-spacing:1px;">Mileage</div>
+                <div style="font-size:15px;font-weight:700;color:#f1f5f9;">{v_miles:,} mi</div>
+            </div>
         </div>
         <span class="{risk_class}">{risk_label}</span>
     </div>
     """, unsafe_allow_html=True)
 
-# ==============================================================================
-# 12. MAIN HEADER
-# ==============================================================================
-st.markdown("""
-<div style="display:flex;align-items:center;gap:18px;margin-bottom:8px;">
-    <div style="width:62px;height:62px;border-radius:50%;background:#2563eb;
-                display:flex;align-items:center;justify-content:center;flex-shrink:0;
-                box-shadow:0 6px 24px rgba(37,99,235,0.45);">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="white">
-            <rect x="3"  y="8"  width="3" height="8"  rx="1.5"/>
-            <rect x="8"  y="5"  width="3" height="14" rx="1.5"/>
-            <rect x="13" y="3"  width="3" height="18" rx="1.5"/>
-            <rect x="18" y="7"  width="3" height="10" rx="1.5"/>
-        </svg>
-    </div>
-    <div>
-        <div class="ds-page-title">Drive<span style="color:#3b82f6">Sense</span> AI</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-st.markdown('<div class="ds-page-subtitle">AI-Enabled Car Diagnosis</div>', unsafe_allow_html=True)
+st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
 # ==============================================================================
 # 13. STAGE 1: INPUT
