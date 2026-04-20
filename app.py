@@ -430,25 +430,20 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Vehicle Profile — VP3 styled
-st.markdown(f"""
-<div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);
-            border:1px solid rgba(255,255,255,0.07);border-radius:12px;
-            padding:12px 16px;margin-bottom:4px;">
-    <div style="width:36px;height:36px;border-radius:8px;background:#2563eb;
-                display:flex;align-items:center;justify-content:center;
-                font-size:18px;flex-shrink:0;">&#128663;</div>
-    <div>
-        <div style="font-size:15px;font-weight:800;color:#f1f5f9;
-                    font-family:'Syne',sans-serif;line-height:1.2;">Vehicle Profile</div>
-        <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
-                    text-transform:uppercase;letter-spacing:1.2px;margin-top:2px;">
-            TAP BELOW TO SET MAKE, MODEL &amp; YEAR</div>
-    </div>
-    <div style="margin-left:auto;color:#475569;font-size:18px;">&#8250;</div>
-</div>
+# Vehicle Profile — VP3 styled expander
+st.markdown("""
+<style>
+div[data-testid="stExpander"]:first-of-type details{
+    background:rgba(255,255,255,0.03)!important;
+    border:1px solid rgba(255,255,255,0.09)!important;
+    border-radius:12px!important;
+}
+div[data-testid="stExpander"]:first-of-type summary{
+    padding:12px 16px!important;
+}
+</style>
 """, unsafe_allow_html=True)
-with st.expander("", expanded=False):
+with st.expander("\U0001f697  Vehicle Profile  —  tap to set make, model & year", expanded=False):
     sorted_makes = sorted(car_data.keys())
     default_make_index = sorted_makes.index("Lexus") if "Lexus" in sorted_makes else 0
     col1, col2 = st.columns(2)
@@ -488,12 +483,23 @@ if st.session_state.stage == "input":
     audio_data = None
 
     with tab_record:
-        st.markdown('<div class="ds-card" style="text-align:center;padding:18px 24px 14px;">'
-            '<div style="font-size:13px;font-weight:700;color:#94a3b8;font-family:IBM Plex Mono,monospace;'
-            'text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px;">'
-            'Hold phone near car sound &mdash; then tap the mic button below</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <style>
+        div[data-testid="stAudioInput"]{text-align:center!important}
+        div[data-testid="stAudioInput"] button{
+            width:90px!important;height:90px!important;border-radius:50%!important;
+            background:#2563eb!important;border:3px solid rgba(59,130,246,0.3)!important;
+            display:flex!important;align-items:center!important;justify-content:center!important;
+            margin:0 auto!important;box-shadow:0 6px 24px rgba(37,99,235,0.4)!important}
+        div[data-testid="stAudioInput"] button svg{width:34px!important;height:34px!important}
+        div[data-testid="stAudioInput"] button:hover{background:#1d4ed8!important}
+        </style>
+        <div style="text-align:center;margin-bottom:8px;">
+            <div style="font-size:17px;font-weight:800;color:#f1f5f9;font-family:Syne,sans-serif;margin-bottom:6px;">Tap to record</div>
+            <div style="font-size:12px;color:#64748b;font-family:monospace;letter-spacing:1px;margin-bottom:16px;">HOLD PHONE NEAR CAR SOUND</div>
+        </div>
+        """, unsafe_allow_html=True)
         recorded_audio = st.audio_input("Record car sound", label_visibility="collapsed")
-        st.markdown('</div>', unsafe_allow_html=True)
         if recorded_audio is not None:
             audio_data = recorded_audio
             st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:10px 0 12px;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span><span style="color:#6ee7b7;font-size:16px;font-weight:700;">Recording captured</span></div>''', unsafe_allow_html=True)
