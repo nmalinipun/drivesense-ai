@@ -110,8 +110,15 @@ div[data-testid="stMetricValue"]{font-size:19px!important;font-weight:800!import
 .stRadio>div>label{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.10)!important;border-radius:12px!important;padding:12px 16px!important;font-size:15px!important;font-weight:700!important;color:#f1f5f9!important;cursor:pointer!important;width:100%!important}
 .stRadio>div>label:hover{border-color:#3b82f6!important;background:rgba(59,130,246,0.08)!important}
 .stCheckbox label{font-size:15px!important;font-weight:700!important;color:#f1f5f9!important}
-.stExpander{background:rgba(255,255,255,0.03)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:14px!important}
-.stExpander summary{font-size:14px!important;font-weight:700!important;color:#64748b!important;font-family:'IBM Plex Mono',monospace!important}
+.stExpander{background:rgba(37,99,235,0.08)!important;border:1.5px solid rgba(59,130,246,0.3)!important;border-radius:16px!important;box-shadow:0 4px 16px rgba(37,99,235,0.12)!important}
+.stExpander summary{font-size:15px!important;font-weight:800!important;color:#93c5fd!important;font-family:'Syne',sans-serif!important;padding:4px 0!important}
+.stExpander summary:hover{color:#3b82f6!important}
+/* Styled tabs */
+.stTabs [data-baseweb="tab-list"]{gap:12px!important;background:transparent!important;border-bottom:2px solid rgba(255,255,255,0.06)!important;padding-bottom:0!important}
+.stTabs [data-baseweb="tab"]{background:rgba(255,255,255,0.04)!important;border:1.5px solid rgba(255,255,255,0.10)!important;border-radius:12px 12px 0 0!important;color:#94a3b8!important;font-size:15px!important;font-weight:700!important;padding:12px 24px!important;font-family:'Syne',sans-serif!important}
+.stTabs [aria-selected="true"]{background:#2563eb!important;border-color:#2563eb!important;color:#ffffff!important;box-shadow:0 4px 16px rgba(37,99,235,0.4)!important}
+.stTabs [data-baseweb="tab"]:hover{background:rgba(59,130,246,0.12)!important;color:#f1f5f9!important}
+.stTabs [data-baseweb="tab-panel"]{background:rgba(255,255,255,0.02)!important;border:1px solid rgba(255,255,255,0.06)!important;border-radius:0 16px 16px 16px!important;padding:20px!important;margin-top:-1px!important}
 audio{width:100%;border-radius:10px;margin:6px 0 10px}
 div[data-testid="stAlert"]{border-radius:12px!important;font-size:15px!important;font-weight:600!important}
 .ds-logo-wrap{display:flex;align-items:center;gap:14px;padding:4px 0 18px;border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:18px}
@@ -424,7 +431,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # Vehicle Profile expander
-with st.expander("\U0001f697 Vehicle Profile \u2014 tap to set your car", expanded=False):
+with st.expander("\U0001f697  Vehicle Profile     tap to set make, model & year", expanded=False):
     sorted_makes = sorted(car_data.keys())
     default_make_index = sorted_makes.index("Lexus") if "Lexus" in sorted_makes else 0
     col1, col2 = st.columns(2)
@@ -460,66 +467,105 @@ if st.session_state.stage == "input":
     st.markdown('<div class="ds-section">Capture your car sound</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section-sub">Record live using your phone microphone or upload an existing audio file.</div>', unsafe_allow_html=True)
 
-    tab_record, tab_upload = st.tabs(["\U0001f3a4 Record Live", "\U0001f4c1 Upload File"])
+    tab_record, tab_upload = st.tabs(["  Record Live", "  Upload File"])
     audio_data = None
 
     with tab_record:
-        st.markdown('<div class="ds-card">Tap <b>Start Recording</b>, hold your phone near the car, then tap <b>Stop</b>. Download the file, then upload it in the Upload tab.</div>', unsafe_allow_html=True)
         st.components.v1.html("""
-        <style>
-        #recBtn{background:#2563eb;color:#fff;border:none;border-radius:12px;font-size:16px;
-                font-weight:800;padding:14px 0;cursor:pointer;width:100%;margin-bottom:12px;font-family:sans-serif}
-        #recBtn.stop{background:#ef4444}
-        #recStatus{color:#94a3b8;font-size:13px;font-family:monospace;margin-bottom:10px;text-align:center}
-        #audioPlayback{width:100%;border-radius:10px;margin-top:8px}
-        #dlWrap{margin-top:10px;display:none}
-        #dlBtn{display:block;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);
-               border-radius:10px;padding:12px;color:#34d399;font-size:13px;font-weight:700;
-               font-family:monospace;text-align:center;text-decoration:none}
-        </style>
-        <button id="recBtn" onclick="toggleRec()">&#127908; Start Recording</button>
-        <div id="recStatus">Tap to start recording from your microphone</div>
-        <audio id="audioPlayback" controls style="display:none"></audio>
-        <div id="dlWrap"><a id="dlBtn" download="car_recording.wav">&#11015;&#65039; Download recording</a></div>
-        <script>
-        let mr, chunks=[], running=false;
-        async function toggleRec(){
-            const btn=document.getElementById("recBtn");
-            const st=document.getElementById("recStatus");
-            if(!running){
-                chunks=[];
-                const stream=await navigator.mediaDevices.getUserMedia({audio:true,sampleRate:22050});
-                mr=new MediaRecorder(stream);
-                mr.ondataavailable=e=>chunks.push(e.data);
-                mr.onstop=()=>{
-                    const blob=new Blob(chunks,{type:"audio/wav"});
-                    const url=URL.createObjectURL(blob);
-                    const player=document.getElementById("audioPlayback");
-                    player.src=url; player.style.display="block";
-                    const dl=document.getElementById("dlBtn");
-                    dl.href=url;
-                    document.getElementById("dlWrap").style.display="block";
-                    st.textContent="\u2705 Recording complete — download then upload in Upload tab";
-                    stream.getTracks().forEach(t=>t.stop());
-                };
-                mr.start();
-                running=true;
-                btn.textContent="\u23f9\uFE0F Stop Recording";
-                btn.className="stop";
-                st.textContent="\uD83D\uDD34 Recording... hold phone near car sound";
-            } else {
-                mr.stop(); running=false;
-                btn.textContent="\uD83C\uDFA4 Start Recording";
-                btn.className="";
-            }
-        }
-        </script>
-        """, height=220)
-        st.info("After recording: **download the file** → switch to **Upload File** tab → upload it → tap **Run Diagnostic Scan**")
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body{margin:0;padding:0;background:#0b1220;font-family:sans-serif}
+.wrap{padding:16px;text-align:center}
+.circle{width:90px;height:90px;border-radius:50%;background:#2563eb;display:flex;
+        align-items:center;justify-content:center;margin:0 auto 16px;cursor:pointer;
+        border:3px solid rgba(59,130,246,0.3);transition:all 0.2s}
+.circle:hover{background:#1d4ed8}
+.circle.recording{background:#ef4444;border-color:rgba(239,68,68,0.4)}
+.title{font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:6px}
+.status{font-size:12px;color:#64748b;font-family:monospace;letter-spacing:1px;margin-bottom:14px}
+.status.active{color:#f87171}
+.status.done{color:#34d399}
+audio{width:100%;border-radius:10px;margin:8px 0;display:none}
+.dl{display:none;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);
+    border-radius:10px;padding:12px 16px;color:#34d399;font-size:13px;font-weight:700;
+    font-family:monospace;text-decoration:none;text-align:center;margin-top:8px}
+.hint{font-size:11px;color:#334155;font-family:monospace;margin-top:10px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="circle" id="micBtn" onclick="toggleRec()">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+      <rect x="9" y="2" width="6" height="12" rx="3" fill="white"/>
+      <path d="M5 10a7 7 0 0 0 14 0" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <line x1="12" y1="17" x2="12" y2="21" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="9" y1="21" x2="15" y2="21" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="title" id="recTitle">Tap to record</div>
+  <div class="status" id="recStatus">TAP CIRCLE TO START</div>
+  <audio id="player" controls></audio>
+  <a id="dlBtn" class="dl" download="car_recording.wav">Download recording</a>
+  <div class="hint" id="hint">Hold your phone 20-30cm from the engine, brakes, or belt while recording</div>
+</div>
+<script>
+var mr, chunks=[], running=false;
+function toggleRec(){
+    var btn=document.getElementById("micBtn");
+    var title=document.getElementById("recTitle");
+    var status=document.getElementById("recStatus");
+    var hint=document.getElementById("hint");
+    if(!running){
+        chunks=[];
+        navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+            mr=new MediaRecorder(stream);
+            mr.ondataavailable=function(e){chunks.push(e.data);};
+            mr.onstop=function(){
+                var blob=new Blob(chunks,{type:"audio/wav"});
+                var url=URL.createObjectURL(blob);
+                var player=document.getElementById("player");
+                player.src=url; player.style.display="block";
+                var dl=document.getElementById("dlBtn");
+                dl.href=url; dl.style.display="block";
+                title.textContent="Recording saved";
+                status.textContent="DOWNLOAD THEN UPLOAD IN UPLOAD TAB";
+                status.className="status done";
+                hint.textContent="1. Download the file  2. Switch to Upload File tab  3. Upload and run scan";
+                btn.className="circle";
+                stream.getTracks().forEach(function(t){t.stop();});
+            };
+            mr.start();
+            running=true;
+            btn.className="circle recording";
+            title.textContent="Recording...";
+            status.textContent="HOLD NEAR CAR SOUND - TAP TO STOP";
+            status.className="status active";
+            hint.textContent="Hold phone near engine / brakes / belt / steering";
+        }).catch(function(err){
+            status.textContent="MICROPHONE ACCESS DENIED";
+            status.className="status active";
+        });
+    } else {
+        mr.stop(); running=false;
+        title.textContent="Processing...";
+        status.textContent="SAVING RECORDING";
+        status.className="status";
+    }
+}
+</script>
+</body>
+</html>
+""", height=280)
 
     with tab_upload:
-        st.markdown('<div class="ds-card">Supported formats: <b>WAV &middot; MP3 &middot; M4A</b> &nbsp;&mdash;&nbsp; Record near the sound source for best accuracy.</div>', unsafe_allow_html=True)
-        audio_data = st.file_uploader("Upload vehicle recording", type=["wav","mp3","m4a"], label_visibility="collapsed")
+        st.markdown('''<div style="border:2px dashed rgba(59,130,246,0.4);border-radius:14px;padding:20px 24px 14px;margin-bottom:14px;text-align:center">
+            <div style="font-size:28px;margin-bottom:8px">&#128190;</div>
+            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:4px">Drop audio file here or browse</div>
+            <div style="font-size:12px;color:#475569;font-family:IBM Plex Mono,monospace;letter-spacing:1px">WAV &middot; MP3 &middot; M4A</div>
+        </div>''', unsafe_allow_html=True)
+        audio_data = st.file_uploader("Choose audio file", type=["wav","mp3","m4a"], label_visibility="collapsed")
         if audio_data is not None:
             st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:10px 0 12px;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span><span style="color:#6ee7b7;font-size:16px;font-weight:700;">{audio_data.name}</span></div>''', unsafe_allow_html=True)
             st.audio(audio_data)
