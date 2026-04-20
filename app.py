@@ -430,8 +430,25 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Vehicle Profile expander
-with st.expander("\U0001f697  Vehicle Profile  —  tap to set make, model & year", expanded=False):
+# Vehicle Profile — VP3 styled
+st.markdown(f"""
+<div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);
+            border:1px solid rgba(255,255,255,0.07);border-radius:12px;
+            padding:12px 16px;margin-bottom:4px;">
+    <div style="width:36px;height:36px;border-radius:8px;background:#2563eb;
+                display:flex;align-items:center;justify-content:center;
+                font-size:18px;flex-shrink:0;">&#128663;</div>
+    <div>
+        <div style="font-size:15px;font-weight:800;color:#f1f5f9;
+                    font-family:'Syne',sans-serif;line-height:1.2;">Vehicle Profile</div>
+        <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
+                    text-transform:uppercase;letter-spacing:1.2px;margin-top:2px;">
+            TAP BELOW TO SET MAKE, MODEL &amp; YEAR</div>
+    </div>
+    <div style="margin-left:auto;color:#475569;font-size:18px;">&#8250;</div>
+</div>
+""", unsafe_allow_html=True)
+with st.expander("", expanded=False):
     sorted_makes = sorted(car_data.keys())
     default_make_index = sorted_makes.index("Lexus") if "Lexus" in sorted_makes else 0
     col1, col2 = st.columns(2)
