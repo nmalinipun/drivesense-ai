@@ -94,7 +94,7 @@ li[role="option"],div[role="option"]{background:#1e293b!important;color:#fff!imp
 li[role="option"] *,div[role="option"] *{color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important}
 li[role="option"]:hover,div[role="option"]:hover{background:#334155!important}
 li[aria-selected="true"],div[aria-selected="true"]{background:#2563eb!important}
-div[data-testid="stFileUploader"]{background:rgba(30,41,59,0.85)!important;border:1.5px dashed rgba(59,130,246,0.5)!important;border-radius:16px!important;padding:14px!important}
+div[data-testid="stFileUploader"]{background:transparent!important;border:none!important;border-radius:0!important;padding:0!important;margin-top:-8px!important}
 div[data-testid="stFileUploaderDropzone"]{background:rgba(30,41,59,0.6)!important;border:1.5px dashed rgba(255,255,255,0.12)!important;border-radius:12px!important;min-height:110px!important}
 div[data-testid="stFileUploaderDropzone"] *{color:#94a3b8!important;font-size:15px!important;font-weight:600!important}
 div[data-testid="stFileUploader"] small{color:#64748b!important}
@@ -431,7 +431,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # Vehicle Profile expander
-with st.expander("\U0001f697  Vehicle Profile     tap to set make, model & year", expanded=False):
+with st.expander("\U0001f697  Vehicle Profile  —  tap to set make, model & year", expanded=False):
     sorted_makes = sorted(car_data.keys())
     default_make_index = sorted_makes.index("Lexus") if "Lexus" in sorted_makes else 0
     col1, col2 = st.columns(2)
@@ -565,7 +565,7 @@ function toggleRec(){
             <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:4px">Drop audio file here or browse</div>
             <div style="font-size:12px;color:#475569;font-family:IBM Plex Mono,monospace;letter-spacing:1px">WAV &middot; MP3 &middot; M4A</div>
         </div>''', unsafe_allow_html=True)
-        audio_data = st.file_uploader("Choose audio file", type=["wav","mp3","m4a"], label_visibility="collapsed")
+        audio_data = st.file_uploader("Choose audio file", type=["wav","mp3","m4a"], label_visibility="hidden")
         if audio_data is not None:
             st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:10px 0 12px;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span><span style="color:#6ee7b7;font-size:16px;font-weight:700;">{audio_data.name}</span></div>''', unsafe_allow_html=True)
             st.audio(audio_data)
