@@ -488,93 +488,22 @@ if st.session_state.stage == "input":
     audio_data = None
 
     with tab_record:
-        st.components.v1.html("""
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-body{margin:0;padding:0;background:#0b1220;font-family:sans-serif}
-.wrap{padding:16px;text-align:center}
-.circle{width:90px;height:90px;border-radius:50%;background:#2563eb;display:flex;
-        align-items:center;justify-content:center;margin:0 auto 16px;cursor:pointer;
-        border:3px solid rgba(59,130,246,0.3);transition:all 0.2s}
-.circle:hover{background:#1d4ed8}
-.circle.recording{background:#ef4444;border-color:rgba(239,68,68,0.4)}
-.title{font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:6px}
-.status{font-size:12px;color:#64748b;font-family:monospace;letter-spacing:1px;margin-bottom:14px}
-.status.active{color:#f87171}
-.status.done{color:#34d399}
-audio{width:100%;border-radius:10px;margin:8px 0;display:none}
-.dl{display:none;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);
-    border-radius:10px;padding:12px 16px;color:#34d399;font-size:13px;font-weight:700;
-    font-family:monospace;text-decoration:none;text-align:center;margin-top:8px}
-.hint{font-size:11px;color:#334155;font-family:monospace;margin-top:10px;line-height:1.6}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="circle" id="micBtn" onclick="toggleRec()">
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
-      <rect x="9" y="2" width="6" height="12" rx="3" fill="white"/>
-      <path d="M5 10a7 7 0 0 0 14 0" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-      <line x1="12" y1="17" x2="12" y2="21" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="9" y1="21" x2="15" y2="21" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-    </svg>
-  </div>
-  <div class="title" id="recTitle">Tap to record</div>
-  <div class="status" id="recStatus">TAP CIRCLE TO START</div>
-  <audio id="player" controls></audio>
-  <a id="dlBtn" class="dl" download="car_recording.wav">Download recording</a>
-  <div class="hint" id="hint">Hold your phone 20-30cm from the engine, brakes, or belt while recording</div>
-</div>
-<script>
-var mr, chunks=[], running=false;
-function toggleRec(){
-    var btn=document.getElementById("micBtn");
-    var title=document.getElementById("recTitle");
-    var status=document.getElementById("recStatus");
-    var hint=document.getElementById("hint");
-    if(!running){
-        chunks=[];
-        navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-            mr=new MediaRecorder(stream);
-            mr.ondataavailable=function(e){chunks.push(e.data);};
-            mr.onstop=function(){
-                var blob=new Blob(chunks,{type:"audio/wav"});
-                var url=URL.createObjectURL(blob);
-                var player=document.getElementById("player");
-                player.src=url; player.style.display="block";
-                var dl=document.getElementById("dlBtn");
-                dl.href=url; dl.style.display="block";
-                title.textContent="Recording saved";
-                status.textContent="DOWNLOAD THEN UPLOAD IN UPLOAD TAB";
-                status.className="status done";
-                hint.textContent="1. Download the file  2. Switch to Upload File tab  3. Upload and run scan";
-                btn.className="circle";
-                stream.getTracks().forEach(function(t){t.stop();});
-            };
-            mr.start();
-            running=true;
-            btn.className="circle recording";
-            title.textContent="Recording...";
-            status.textContent="HOLD NEAR CAR SOUND - TAP TO STOP";
-            status.className="status active";
-            hint.textContent="Hold phone near engine / brakes / belt / steering";
-        }).catch(function(err){
-            status.textContent="MICROPHONE ACCESS DENIED";
-            status.className="status active";
-        });
-    } else {
-        mr.stop(); running=false;
-        title.textContent="Processing...";
-        status.textContent="SAVING RECORDING";
-        status.className="status";
-    }
-}
-</script>
-</body>
-</html>
-""", height=280)
+        st.markdown('<div class="ds-card" style="text-align:center;padding:18px 24px 14px;">'
+            '<div style="font-size:13px;font-weight:700;color:#94a3b8;font-family:IBM Plex Mono,monospace;'
+            'text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px;">'
+            'Hold phone near car sound &mdash; then tap the mic button below</div>', unsafe_allow_html=True)
+        recorded_audio = st.audio_input("Record car sound", label_visibility="collapsed")
+        st.markdown('</div>', unsafe_allow_html=True)
+        if recorded_audio is not None:
+            audio_data = recorded_audio
+            st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:10px 0 12px;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span><span style="color:#6ee7b7;font-size:16px;font-weight:700;">Recording captured</span></div>''', unsafe_allow_html=True)
+            st.audio(recorded_audio)
+            if st.session_state.get("uploaded_filename") != "live_recording.wav":
+                temp_path = save_uploaded_file_temporarily(recorded_audio)
+                st.session_state.uploaded_temp_path = temp_path
+                st.session_state.uploaded_filename  = "live_recording.wav"
+        else:
+            audio_data = None
 
     with tab_upload:
         st.markdown('''<div style="border:2px dashed rgba(59,130,246,0.4);border-radius:14px;padding:20px 24px 14px;margin-bottom:14px;text-align:center">
