@@ -17,7 +17,7 @@ except Exception:
 # ==============================================================================
 # 1. PAGE CONFIG
 # ==============================================================================
-st.set_page_config(page_title="DriveSense AI", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="DriveSense AI", page_icon="🚗", layout="wide", initial_sidebar_state="collapsed")
 
 # ==============================================================================
 # 2. GLOBAL CONFIG
@@ -28,8 +28,8 @@ WINDOW_SAMPLES = int(TARGET_SR * WINDOW_SECONDS)
 CONFIDENCE_THRESHOLD = 0.60
 
 BASE_DIR         = Path(__file__).resolve().parent
-MODEL_PATH       = BASE_DIR / "models" / "project_milo_final_classifier.joblib"
-ENCODER_PATH     = BASE_DIR / "models" / "project_milo_label_encoder.joblib"
+MODEL_PATH       = BASE_DIR / "project_milo_final_classifier.joblib"
+ENCODER_PATH     = BASE_DIR / "project_milo_label_encoder.joblib"
 REFERENCE_ROOT   = BASE_DIR / "reference_audio"
 FEEDBACK_ROOT    = BASE_DIR / "feedback_audio"
 FEEDBACK_LOG_CSV = BASE_DIR / "feedback_log_project_milo.csv"
@@ -59,33 +59,22 @@ DISPLAY_NAMES = {
 
 def pretty_label(label):
     return DISPLAY_NAMES.get(label, label.replace("_", " ").title())
+
 # ==============================================================================
-# LOGO — base64 encoded PNG (works on all deployments)
+# LOGO - embedded base64 PNG
 # ==============================================================================
 LOGO_B64 = "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"
-LOGO_HTML = f'<img src="data:image/png;base64,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" width="{size}px" style="border-radius:50%">'
 
 def logo_img(size=60):
-    return f'<img src="data:image/png;base64,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" width="{size}px" style="border-radius:50%;display:block">'
-
-
+    return f'<img src="data:image/png;base64,{LOGO_B64}" width="{size}px" style="border-radius:50%;display:block">'
 
 # ==============================================================================
-# 3. CUSTOM CSS — DriveSense AI design
+# 3. CUSTOM CSS
 # ==============================================================================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Syne:wght@600;700;800&display=swap');
-
-html,body,[class*="css"],.stApp{
-    font-family:'Syne',sans-serif!important;
-    background:
-        radial-gradient(circle at top left,rgba(41,98,255,0.16),transparent 30%),
-        radial-gradient(circle at top right,rgba(0,200,83,0.10),transparent 24%),
-        linear-gradient(135deg,#0b1220 0%,#0f172a 45%,#172554 100%)!important;
-    color:#f1f5f9!important;
-}
-/* ── Kill the white header bar ── */
+html,body,[class*="css"],.stApp{font-family:'Syne',sans-serif!important;background:radial-gradient(circle at top left,rgba(41,98,255,0.16),transparent 30%),radial-gradient(circle at top right,rgba(0,200,83,0.10),transparent 24%),linear-gradient(135deg,#0b1220 0%,#0f172a 45%,#172554 100%)!important;color:#f1f5f9!important}
 #root > div:first-child > div > div > div > div > section > div {padding-top:0!important}
 header[data-testid="stHeader"]{background:transparent!important;height:0!important;min-height:0!important}
 div[data-testid="stDecoration"]{display:none!important}
@@ -93,27 +82,10 @@ div[data-testid="stToolbar"]{display:none!important}
 #MainMenu{visibility:hidden!important}
 footer{visibility:hidden!important}
 .stApp > header{display:none!important}
-
-/* ── Full width, no top gap ── */
-.main .block-container{
-    padding-top:2rem!important;
-    padding-bottom:3rem!important;
-    max-width:100%!important;
-    padding-left:2.5rem!important;
-    padding-right:2.5rem!important;
-}
+.main .block-container{padding-top:1.5rem!important;padding-bottom:3rem!important;max-width:100%!important;padding-left:1.5rem!important;padding-right:1.5rem!important}
 h1,h2,h3,h4,h5,h6,p,label,div,span,li,b,strong{color:#f1f5f9!important}
-
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%)!important;
-    border-right:1px solid rgba(255,255,255,0.07)!important;
-}
-.stSelectbox label,.stSlider label,.stRadio label{
-    font-size:13px!important;font-weight:700!important;color:#94a3b8!important;
-    text-transform:uppercase!important;letter-spacing:1.5px!important;
-    font-family:'IBM Plex Mono',monospace!important;
-}
-
+section[data-testid="stSidebar"]{background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%)!important;border-right:1px solid rgba(255,255,255,0.07)!important}
+.stSelectbox label,.stSlider label,.stRadio label{font-size:13px!important;font-weight:700!important;color:#94a3b8!important;text-transform:uppercase!important;letter-spacing:1.5px!important;font-family:'IBM Plex Mono',monospace!important}
 div[data-baseweb="select"]>div{background:#1e293b!important;border:1px solid rgba(255,255,255,0.12)!important;border-radius:12px!important;min-height:48px!important;color:#fff!important}
 div[data-baseweb="select"] input,div[data-baseweb="select"] span,div[data-baseweb="select"] div{color:#fff!important;-webkit-text-fill-color:#fff!important}
 div[data-baseweb="select"] svg{fill:#fff!important}
@@ -122,74 +94,48 @@ li[role="option"],div[role="option"]{background:#1e293b!important;color:#fff!imp
 li[role="option"] *,div[role="option"] *{color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important}
 li[role="option"]:hover,div[role="option"]:hover{background:#334155!important}
 li[aria-selected="true"],div[aria-selected="true"]{background:#2563eb!important}
-
 div[data-testid="stFileUploader"]{background:rgba(30,41,59,0.85)!important;border:1.5px dashed rgba(59,130,246,0.5)!important;border-radius:16px!important;padding:14px!important}
 div[data-testid="stFileUploaderDropzone"]{background:rgba(30,41,59,0.6)!important;border:1.5px dashed rgba(255,255,255,0.12)!important;border-radius:12px!important;min-height:110px!important}
 div[data-testid="stFileUploaderDropzone"] *{color:#94a3b8!important;font-size:15px!important;font-weight:600!important}
 div[data-testid="stFileUploader"] small{color:#64748b!important}
 div[data-testid="stFileUploader"] button{background:#2563eb!important;color:#fff!important;border:none!important;border-radius:10px!important;font-weight:700!important;font-size:14px!important;padding:0.5rem 1.2rem!important}
 div[data-testid="stFileUploader"] button *{color:#fff!important;fill:#fff!important}
-
 textarea,input,.stTextArea textarea{background-color:#1e293b!important;color:#f1f5f9!important;font-size:15px!important;font-weight:600!important;border:1px solid rgba(255,255,255,0.12)!important;border-radius:12px!important}
-
 div[data-testid="stMetric"]{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:20px}
 div[data-testid="stMetric"] label{font-size:11px!important;font-weight:700!important;color:#64748b!important;text-transform:uppercase!important;letter-spacing:1.5px!important;font-family:'IBM Plex Mono',monospace!important}
 div[data-testid="stMetricValue"]{font-size:19px!important;font-weight:800!important;color:#f1f5f9!important}
-
 .stButton>button{background:#2563eb!important;color:#fff!important;border:none!important;border-radius:12px!important;font-weight:800!important;font-size:16px!important;padding:0.75rem 1.5rem!important;width:100%!important;font-family:'Syne',sans-serif!important;letter-spacing:0.3px!important;box-shadow:0 4px 16px rgba(37,99,235,0.3)!important}
 .stButton>button:hover{background:#1d4ed8!important}
-
 .stRadio>div{gap:8px!important}
 .stRadio>div>label{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.10)!important;border-radius:12px!important;padding:12px 16px!important;font-size:15px!important;font-weight:700!important;color:#f1f5f9!important;cursor:pointer!important;width:100%!important}
 .stRadio>div>label:hover{border-color:#3b82f6!important;background:rgba(59,130,246,0.08)!important}
-
 .stCheckbox label{font-size:15px!important;font-weight:700!important;color:#f1f5f9!important}
-
 .stExpander{background:rgba(255,255,255,0.03)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:14px!important}
 .stExpander summary{font-size:14px!important;font-weight:700!important;color:#64748b!important;font-family:'IBM Plex Mono',monospace!important}
-
 audio{width:100%;border-radius:10px;margin:6px 0 10px}
 div[data-testid="stAlert"]{border-radius:12px!important;font-size:15px!important;font-weight:600!important}
-
-/* ── DriveSense Components ── */
 .ds-logo-wrap{display:flex;align-items:center;gap:14px;padding:4px 0 18px;border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:18px}
-.ds-logo-icon{width:46px;height:46px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(37,99,235,0.4)}
 .ds-logo-name{font-size:21px;font-weight:800;line-height:1;font-family:'Syne',sans-serif;margin-bottom:3px}
 .ds-logo-sub{font-size:10px;font-family:'IBM Plex Mono',monospace;color:#334155!important;letter-spacing:2px;text-transform:uppercase}
-
-.ds-page-title{font-size:3rem;font-weight:800;color:#f1f5f9!important;line-height:1.1;margin-bottom:6px;font-family:'Syne',sans-serif}
-.ds-page-subtitle{font-size:15px;font-weight:600;color:#475569!important;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:2.5rem}
-
+.ds-page-title{font-size:2.8rem;font-weight:800;color:#f1f5f9!important;line-height:1.1;margin-bottom:4px;font-family:'Syne',sans-serif}
+.ds-page-subtitle{font-size:15px;font-weight:600;color:#475569!important;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;margin-bottom:1.5rem}
 .ds-step-badge{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#60a5fa!important;background:rgba(59,130,246,0.10);border:1px solid rgba(59,130,246,0.22);border-radius:20px;padding:5px 14px;margin-bottom:10px;letter-spacing:0.5px}
-
 .ds-section{font-size:1.7rem;font-weight:800;color:#f1f5f9!important;margin-bottom:4px;line-height:1.2;font-family:'Syne',sans-serif}
 .ds-section-sub{font-size:15px;font-weight:600;color:#64748b!important;margin-bottom:1.4rem;line-height:1.6}
-
 .ds-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:18px;padding:20px 24px;margin-bottom:16px;font-size:15px;font-weight:600;color:#cbd5e1!important;line-height:1.65;backdrop-filter:blur(8px)}
 .ds-card b,.ds-card strong{color:#f1f5f9!important;font-weight:800!important}
-.ds-card code{background:rgba(59,130,246,0.15);color:#93c5fd!important;padding:2px 8px;border-radius:6px;font-size:13px;font-family:'IBM Plex Mono',monospace;font-weight:600}
-
 .ds-soft-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 20px;margin-bottom:16px}
-.ds-soft-card b,.ds-soft-card strong{color:#f1f5f9!important;font-weight:800!important}
-
 .ds-notice{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-left:4px solid #f59e0b;border-radius:0 14px 14px 0;padding:14px 18px;margin-bottom:20px;font-size:15px;font-weight:700;color:#fbbf24!important;line-height:1.6}
-.ds-notice b{color:#f59e0b!important}
-
 .ds-success{background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:12px;font-size:16px;font-weight:800;color:#34d399!important;margin-bottom:20px}
-
 .ds-pill{display:inline-block;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);border-radius:8px;padding:6px 14px;font-size:14px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#93c5fd!important;margin:4px 6px 4px 0}
-
 .ds-clip-label{font-size:12px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#475569!important;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px}
-
 .ds-bullet-box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:4px;margin-top:8px}
 .ds-bullet-item{display:flex;gap:16px;align-items:flex-start;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:15px;font-weight:600;color:#cbd5e1!important;line-height:1.7}
 .ds-bullet-item:last-child{border-bottom:none}
 .ds-bullet-num{width:32px;height:32px;border-radius:50%;background:#2563eb;color:#fff!important;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-family:'IBM Plex Mono',monospace;box-shadow:0 2px 8px rgba(37,99,235,0.35)}
-
 .ds-risk-high{background:rgba(239,68,68,0.15);color:#f87171!important;border:1px solid rgba(239,68,68,0.3);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:800;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;display:inline-block}
 .ds-risk-medium{background:rgba(245,158,11,0.15);color:#fbbf24!important;border:1px solid rgba(245,158,11,0.3);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:800;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;display:inline-block}
 .ds-risk-low{background:rgba(16,185,129,0.15);color:#34d399!important;border:1px solid rgba(16,185,129,0.3);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:800;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;display:inline-block}
-
 .ds-meta{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:18px}
 .ds-meta-item{padding:0 16px;border-right:1px solid rgba(255,255,255,0.07)}
 .ds-meta-item:first-child{padding-left:0}
@@ -394,86 +340,32 @@ def build_expert_recommendations(selected_label, vehicle, selected_clips, user_n
     miles      = vehicle["miles"]
     high_mileage = miles >= 120000
     note_text    = (user_note or "").strip().lower()
-
     if selected_label == "power_steering_idle":
-        bullets = [
-            f"- Check the power steering fluid level and condition first on this {year} {make} {model_name}; low or degraded fluid can produce whining at idle.",
-            f"- If the noise becomes stronger when turning the steering wheel, inspect the power steering pump, hoses, and steering load behavior; at {miles:,} miles, pump wear is more plausible.",
-            f"- Also inspect the accessory belt path for slip or tension issues, because belt-related noise can overlap with steering-related whining at idle."
-        ]
+        bullets = [f"- Check the power steering fluid level and condition first on this {year} {make} {model_name}; low or degraded fluid can produce whining at idle.",f"- If the noise becomes stronger when turning the steering wheel, inspect the power steering pump, hoses, and steering load behavior; at {miles:,} miles, pump wear is more plausible.",f"- Also inspect the accessory belt path for slip or tension issues, because belt-related noise can overlap with steering-related whining at idle."]
     elif selected_label == "power_steering_serpentine_belt":
-        bullets = [
-            f"- Inspect both the power steering system and the serpentine belt drive, because this sound pattern overlaps between steering-load noise and belt-related squeal.",
-            f"- Check belt condition, tension, pulley alignment, and belt glazing first on this {year} {make} {model_name}.",
-            f"- If the sound changes when steering input is applied, also inspect power steering fluid level and pump behavior before replacing parts."
-        ]
+        bullets = [f"- Inspect both the power steering system and the serpentine belt drive, because this sound pattern overlaps between steering-load noise and belt-related squeal.",f"- Check belt condition, tension, pulley alignment, and belt glazing first on this {year} {make} {model_name}.",f"- If the sound changes when steering input is applied, also inspect power steering fluid level and pump behavior before replacing parts."]
     elif selected_label == "low_engine_oil":
-        bullets = [
-            f"- Verify engine oil level immediately and confirm oil condition; low or degraded oil can increase top-end or rotating mechanical noise.",
-            f"- Do not continue extended driving until oil level is checked, especially on a {year} {make} {model_name} with {miles:,} miles.",
-            f"- If oil is low, inspect for leaks, oil consumption, or overdue service rather than only topping off and moving on."
-        ]
+        bullets = [f"- Verify engine oil level immediately and confirm oil condition; low or degraded oil can increase top-end or rotating mechanical noise.",f"- Do not continue extended driving until oil level is checked, especially on a {year} {make} {model_name} with {miles:,} miles.",f"- If oil is low, inspect for leaks, oil consumption, or overdue service rather than only topping off and moving on."]
     elif selected_label == "low_oil_power_steering":
-        bullets = [
-            f"- Check the power steering fluid reservoir level and fluid condition first; this sound pattern is consistent with steering-system fluid starvation.",
-            f"- Inspect for hose seepage, pump-area leaks, or reservoir contamination on this {year} {make} {model_name}.",
-            f"- If noise is strongest during steering input at idle or parking speed, treat the steering hydraulic system as the primary inspection target."
-        ]
+        bullets = [f"- Check the power steering fluid reservoir level and fluid condition first; this sound pattern is consistent with steering-system fluid starvation.",f"- Inspect for hose seepage, pump-area leaks, or reservoir contamination on this {year} {make} {model_name}.",f"- If noise is strongest during steering input at idle or parking speed, treat the steering hydraulic system as the primary inspection target."]
     elif selected_label == "low_oil_power_steering_serpentine_belt":
-        bullets = [
-            f"- Inspect both fluid condition and belt-drive condition, because the selected sound class suggests overlapping steering-hydraulic and belt-drive behavior.",
-            f"- Check power steering fluid level, pump response, belt tension, pulley condition, and visible belt glazing or cracking.",
-            f"- Prioritize root-cause inspection before parts replacement, because low fluid and belt slip can occur together and produce similar acoustic patterns."
-        ]
+        bullets = [f"- Inspect both fluid condition and belt-drive condition, because the selected sound class suggests overlapping steering-hydraulic and belt-drive behavior.",f"- Check power steering fluid level, pump response, belt tension, pulley condition, and visible belt glazing or cracking.",f"- Prioritize root-cause inspection before parts replacement, because low fluid and belt slip can occur together and produce similar acoustic patterns."]
     elif selected_label == "low_oil_serpentine_belt":
-        bullets = [
-            f"- Inspect engine oil condition and accessory belt condition together, because this sound class suggests overlap between lubrication-related roughness and belt-drive noise.",
-            f"- Check for belt glazing, cracking, pulley wobble, and weak tension, especially if the sound is sharper during startup or idle transitions.",
-            f"- Given the {miles:,} miles on this {year} {make} {model_name}, age-related wear or overdue maintenance is a realistic contributing factor."
-        ]
+        bullets = [f"- Inspect engine oil condition and accessory belt condition together, because this sound class suggests overlap between lubrication-related roughness and belt-drive noise.",f"- Check for belt glazing, cracking, pulley wobble, and weak tension, especially if the sound is sharper during startup or idle transitions.",f"- Given the {miles:,} miles on this {year} {make} {model_name}, age-related wear or overdue maintenance is a realistic contributing factor."]
     elif selected_label == "bad_brakes":
-        bullets = [
-            f"- Inspect brake pad thickness, rotor surface condition, and any metallic scraping or high-pitched squeal source before continued use.",
-            f"- If the sound occurs only during braking, prioritize front brake hardware and rotor-pad contact surfaces on this {year} {make} {model_name}.",
-            f"- At {miles:,} miles, also check for uneven pad wear, seized slide pins, or rotor scoring rather than assuming only normal brake noise."
-        ]
+        bullets = [f"- Inspect brake pad thickness, rotor surface condition, and any metallic scraping or high-pitched squeal source before continued use.",f"- If the sound occurs only during braking, prioritize front brake hardware and rotor-pad contact surfaces on this {year} {make} {model_name}.",f"- At {miles:,} miles, also check for uneven pad wear, seized slide pins, or rotor scoring rather than assuming only normal brake noise."]
     elif selected_label == "bad_ignition":
-        bullets = [
-            f"- Inspect ignition-related items first, including spark plugs, coils, and combustion smoothness, because this sound pattern is consistent with ignition irregularity.",
-            f"- If the engine also feels rough at idle, misfires under load, or shows fuel economy drop, treat ignition diagnosis as higher priority.",
-            f"- On a higher-mileage vehicle like this {year} {make} {model_name}, worn plugs or coil weakness are more plausible than a random isolated sound event."
-        ]
+        bullets = [f"- Inspect ignition-related items first, including spark plugs, coils, and combustion smoothness, because this sound pattern is consistent with ignition irregularity.",f"- If the engine also feels rough at idle, misfires under load, or shows fuel economy drop, treat ignition diagnosis as higher priority.",f"- On a higher-mileage vehicle like this {year} {make} {model_name}, worn plugs or coil weakness are more plausible than a random isolated sound event."]
     elif selected_label == "normal_brakes":
-        bullets = [
-            f"- The selected sound is closer to a normal brake-related pattern for this {year} {make} {model_name}.",
-            f"- Continue normal brake observation and routine service checks if braking feel, stopping distance, and pedal response remain normal.",
-            f"- Recheck the system if the sound becomes metallic, continuous, vibration-linked, or significantly louder."
-        ]
+        bullets = [f"- The selected sound is closer to a normal brake-related pattern for this {year} {make} {model_name}.",f"- Continue normal brake observation and routine service checks if braking feel, stopping distance, and pedal response remain normal.",f"- Recheck the system if the sound becomes metallic, continuous, vibration-linked, or significantly louder."]
     elif selected_label == "normal_engine_idle":
-        bullets = [
-            f"- The selected sound is closer to a normal engine idle pattern for this {year} {make} {model_name}.",
-            f"- At {miles:,} miles, keep routine maintenance current, including oil service, belt inspection, and fluid checks, even if no active fault is indicated.",
-            f"- Re-record and compare again if a sharper knock, whine, chirp, or rough idle develops later."
-        ]
+        bullets = [f"- The selected sound is closer to a normal engine idle pattern for this {year} {make} {model_name}.",f"- At {miles:,} miles, keep routine maintenance current, including oil service, belt inspection, and fluid checks, even if no active fault is indicated.",f"- Re-record and compare again if a sharper knock, whine, chirp, or rough idle develops later."]
     elif selected_label == "normal_engine_start":
-        bullets = [
-            f"- The selected sound is closer to a normal engine start pattern for this {year} {make} {model_name}.",
-            f"- Continue standard maintenance and monitor whether startup noise becomes longer, harsher, or more metallic over time.",
-            f"- If startup sound begins to persist after warm-up, repeat the recording and inspect lubrication and belt-drive systems."
-        ]
+        bullets = [f"- The selected sound is closer to a normal engine start pattern for this {year} {make} {model_name}.",f"- Continue standard maintenance and monitor whether startup noise becomes longer, harsher, or more metallic over time.",f"- If startup sound begins to persist after warm-up, repeat the recording and inspect lubrication and belt-drive systems."]
     elif selected_label == "serpentine_belt_idle":
-        bullets = [
-            f"- Inspect the serpentine belt first for glazing, cracking, contamination, or weak tension, since idle belt noise often points there.",
-            f"- Also inspect belt pulleys and tensioner movement, because a worn pulley or weak tensioner can create repeating idle chirp or squeal.",
-            f"- On a {year} {make} {model_name} with {miles:,} miles, belt-drive wear is a realistic and common inspection target."
-        ]
+        bullets = [f"- Inspect the serpentine belt first for glazing, cracking, contamination, or weak tension, since idle belt noise often points there.",f"- Also inspect belt pulleys and tensioner movement, because a worn pulley or weak tensioner can create repeating idle chirp or squeal.",f"- On a {year} {make} {model_name} with {miles:,} miles, belt-drive wear is a realistic and common inspection target."]
     else:
-        bullets = [
-            f"- Inspect the components most related to the selected sound class: {pretty_label(selected_label)}.",
-            f"- Evaluate the sound in the context of a {year} {make} {model_name} with {miles:,} miles and compare it with the confirmed reference clips.",
-            f"- Confirm the condition with targeted physical inspection before repair."
-        ]
-
+        bullets = [f"- Inspect the components most related to the selected sound class: {pretty_label(selected_label)}.",f"- Evaluate the sound in the context of a {year} {make} {model_name} with {miles:,} miles and compare it with the confirmed reference clips.",f"- Confirm the condition with targeted physical inspection before repair."]
     if high_mileage and selected_label not in {"normal_brakes","normal_engine_idle","normal_engine_start"}:
         bullets[1] = bullets[1].rstrip(".") + " Higher mileage increases the likelihood of wear-related causes."
     if "metallic" in note_text:
@@ -483,11 +375,7 @@ def build_expert_recommendations(selected_label, vehicle, selected_clips, user_n
 # ==============================================================================
 # 10. SESSION STATE
 # ==============================================================================
-for key, default in {
-    "stage":"input","result":None,"user_input":"",
-    "selected_reference_class":None,"selected_reference_clips":[],
-    "uploaded_temp_path":None,"uploaded_filename":None,"saved_feedback_path":None
-}.items():
+for key, default in {"stage":"input","result":None,"user_input":"","selected_reference_class":None,"selected_reference_clips":[],"uploaded_temp_path":None,"uploaded_filename":None,"saved_feedback_path":None}.items():
     if key not in st.session_state:
         st.session_state[key] = default
 
@@ -501,28 +389,14 @@ def do_restart():
     st.session_state.saved_feedback_path=None
 
 # ==============================================================================
-# 11. CAR DATA + SESSION DEFAULTS
+# 11. CAR DATA
 # ==============================================================================
-car_data = {
-    "Audi":["A3","A4","A6","Q5","Q7"],
-    "BMW":["3 Series","5 Series","X3","X5","7 Series"],
-    "Chevrolet":["Cruze","Equinox","Malibu","Silverado","Tahoe"],
-    "Ford":["Escape","Explorer","F-150","Focus","Fusion"],
-    "Honda":["Accord","Civic","CR-V","Fit","Pilot"],
-    "Hyundai":["Accent","Elantra","Santa Fe","Sonata","Tucson"],
-    "Jeep":["Cherokee","Compass","Grand Cherokee","Renegade","Wrangler"],
-    "Kia":["Forte","Optima","Sorento","Soul","Sportage"],
-    "Lexus":["ES350","GX460","IS250","LS460","RX350"],
-    "Mazda":["CX-30","CX-5","CX-9","Mazda3","Mazda6"],
-    "Mercedes-Benz":["C-Class","E-Class","GLC","GLE","S-Class"],
-    "Nissan":["Altima","Murano","Pathfinder","Rogue","Sentra"],
-    "Subaru":["Crosstrek","Forester","Impreza","Legacy","Outback"],
-    "Toyota":["Camry","Corolla","Highlander","Prius","RAV4"],
-    "Volkswagen":["Atlas","Golf","Jetta","Passat","Tiguan"],
-}
+car_data = {"Audi":["A3","A4","A6","Q5","Q7"],"BMW":["3 Series","5 Series","X3","X5","7 Series"],"Chevrolet":["Cruze","Equinox","Malibu","Silverado","Tahoe"],"Ford":["Escape","Explorer","F-150","Focus","Fusion"],"Honda":["Accord","Civic","CR-V","Fit","Pilot"],"Hyundai":["Accent","Elantra","Santa Fe","Sonata","Tucson"],"Jeep":["Cherokee","Compass","Grand Cherokee","Renegade","Wrangler"],"Kia":["Forte","Optima","Sorento","Soul","Sportage"],"Lexus":["ES350","GX460","IS250","LS460","RX350"],"Mazda":["CX-30","CX-5","CX-9","Mazda3","Mazda6"],"Mercedes-Benz":["C-Class","E-Class","GLC","GLE","S-Class"],"Nissan":["Altima","Murano","Pathfinder","Rogue","Sentra"],"Subaru":["Crosstrek","Forester","Impreza","Legacy","Outback"],"Toyota":["Camry","Corolla","Highlander","Prius","RAV4"],"Volkswagen":["Atlas","Golf","Jetta","Passat","Tiguan"]}
 year_options = list(range(2026, 1995, -1))
 
-# Keep sidebar minimal — just the logo
+# ==============================================================================
+# 12. SIDEBAR - logo only
+# ==============================================================================
 with st.sidebar:
     st.markdown(f"""
     <div class="ds-logo-wrap">
@@ -537,10 +411,8 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 12. MAIN HEADER + VEHICLE PROFILE EXPANDER
+# 13. MAIN HEADER
 # ==============================================================================
-
-# Header with embedded PNG logo
 st.markdown(f"""
 <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">
     {logo_img(72)}
@@ -551,11 +423,10 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Vehicle Profile — collapsible expander (mobile friendly)
-with st.expander("🚗 Vehicle Profile — tap to set your car", expanded=False):
-    sorted_makes       = sorted(car_data.keys())
+# Vehicle Profile expander
+with st.expander("\U0001f697 Vehicle Profile \u2014 tap to set your car", expanded=False):
+    sorted_makes = sorted(car_data.keys())
     default_make_index = sorted_makes.index("Lexus") if "Lexus" in sorted_makes else 0
-
     col1, col2 = st.columns(2)
     with col1:
         v_make = st.selectbox("Make", sorted_makes, index=default_make_index)
@@ -564,76 +435,39 @@ with st.expander("🚗 Vehicle Profile — tap to set your car", expanded=False)
         if v_make == "Lexus" and "ES350" in car_data[v_make]:
             default_model_index = car_data[v_make].index("ES350")
         v_model = st.selectbox("Model", car_data[v_make], index=default_model_index)
-
     col3, col4 = st.columns(2)
     with col3:
         default_year_index = year_options.index(2008) if 2008 in year_options else 0
         v_year = st.selectbox("Year", year_options, index=default_year_index)
     with col4:
         v_miles = st.select_slider("Mileage", options=list(range(0, 250001, 5000)), value=160000)
-
-    # Risk badge
     age = 2026 - v_year
     if age >= 15 or v_miles >= 150000:
-        risk_class, risk_label = "ds-risk-high",   "HIGH RISK"
+        risk_class, risk_label = "ds-risk-high", "HIGH RISK"
     elif age >= 8 or v_miles >= 80000:
         risk_class, risk_label = "ds-risk-medium", "MODERATE RISK"
     else:
-        risk_class, risk_label = "ds-risk-low",    "LOW RISK"
-
-    st.markdown(f"""
-    <div style="display:flex;justify-content:space-between;align-items:center;
-                background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
-                border-radius:12px;padding:12px 16px;margin-top:8px;">
-        <div style="display:flex;gap:20px;">
-            <div>
-                <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            text-transform:uppercase;letter-spacing:1px;">Age</div>
-                <div style="font-size:15px;font-weight:700;color:#f1f5f9;">{age} yrs</div>
-            </div>
-            <div>
-                <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            text-transform:uppercase;letter-spacing:1px;">Mileage</div>
-                <div style="font-size:15px;font-weight:700;color:#f1f5f9;">{v_miles:,} mi</div>
-            </div>
-        </div>
-        <span class="{risk_class}">{risk_label}</span>
-    </div>
-    """, unsafe_allow_html=True)
+        risk_class, risk_label = "ds-risk-low", "LOW RISK"
+    st.markdown(f"""<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 16px;margin-top:8px;"><div style="display:flex;gap:20px;"><div><div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1px;">Age</div><div style="font-size:15px;font-weight:700;color:#f1f5f9;">{age} yrs</div></div><div><div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1px;">Mileage</div><div style="font-size:15px;font-weight:700;color:#f1f5f9;">{v_miles:,} mi</div></div></div><span class="{risk_class}">{risk_label}</span></div>""", unsafe_allow_html=True)
 
 st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
 # ==============================================================================
-# 13. STAGE 1: INPUT
+# 14. STAGE 1: INPUT
 # ==============================================================================
 if st.session_state.stage == "input":
-
     st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Step 1 of 3 &nbsp;&mdash;&nbsp; Acoustic Capture</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section">Upload your car sound</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section-sub">Upload an engine, brake, belt, steering, or vehicle sound recording to begin the diagnostic screening workflow.</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-card">Supported formats: <b>WAV &middot; MP3 &middot; M4A</b> &nbsp;&mdash;&nbsp; Record near the sound source for best accuracy.</div>', unsafe_allow_html=True)
-
-    audio_data = st.file_uploader(
-        "Upload vehicle recording",
-        type=["wav", "mp3", "m4a"],
-        label_visibility="collapsed",
-    )
-
+    audio_data = st.file_uploader("Upload vehicle recording", type=["wav","mp3","m4a"], label_visibility="collapsed")
     if audio_data is not None:
-        st.markdown(f"""
-        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);
-                    border-radius:12px;padding:12px 18px;margin:10px 0 12px;
-                    display:flex;align-items:center;gap:12px;">
-            <span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span>
-            <span style="color:#6ee7b7;font-size:16px;font-weight:700;">{audio_data.name}</span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:10px 0 12px;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:22px;line-height:1;">&#10003;</span><span style="color:#6ee7b7;font-size:16px;font-weight:700;">{audio_data.name}</span></div>""", unsafe_allow_html=True)
         st.audio(audio_data)
         if st.session_state.get("uploaded_filename") != audio_data.name:
             temp_path = save_uploaded_file_temporarily(audio_data)
             st.session_state.uploaded_temp_path = temp_path
             st.session_state.uploaded_filename  = audio_data.name
-
     st.markdown("<br>", unsafe_allow_html=True)
     if audio_data and st.button("Run Diagnostic Scan \u2192"):
         with st.spinner("Processing acoustic signal..."):
@@ -645,14 +479,7 @@ if st.session_state.stage == "input":
                 top_indices = result["top_indices"]
                 top_idx     = int(top_indices[0])
                 top_prob    = float(mean_probs[top_idx])
-                st.session_state.result = {
-                    "mean_probs":mean_probs,"top_indices":top_indices,
-                    "top_idx":top_idx,"top_prob":top_prob,
-                    "num_windows":result["num_windows"],"duration_sec":result["duration_sec"],
-                    "all_probs":result["all_probs"],
-                    "audio_name":getattr(audio_data,"name","uploaded_audio"),
-                    "vehicle":{"make":v_make,"model":v_model,"year":v_year,"miles":v_miles},
-                }
+                st.session_state.result = {"mean_probs":mean_probs,"top_indices":top_indices,"top_idx":top_idx,"top_prob":top_prob,"num_windows":result["num_windows"],"duration_sec":result["duration_sec"],"all_probs":result["all_probs"],"audio_name":getattr(audio_data,"name","uploaded_audio"),"vehicle":{"make":v_make,"model":v_model,"year":v_year,"miles":v_miles}}
                 st.session_state.selected_reference_class = encoder.classes_[top_indices[0]]
                 st.session_state.selected_reference_clips = []
                 st.session_state.stage = "low_confidence" if top_prob < CONFIDENCE_THRESHOLD else "refine"
@@ -661,48 +488,21 @@ if st.session_state.stage == "input":
                 st.error(f"Prediction failed: {e}")
 
 # ==============================================================================
-# 14. STAGE 2A: LOW CONFIDENCE
+# 15. STAGE 2A: LOW CONFIDENCE
 # ==============================================================================
 elif st.session_state.stage == "low_confidence":
-
     st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Step 2 of 3 &nbsp;&mdash;&nbsp; Review Candidates</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section">Review Candidate Classes</div>', unsafe_allow_html=True)
-
     result      = st.session_state.result
     top_indices = result["top_indices"]
-
-    st.markdown("""
-    <div class="ds-notice">
-        <b>Notice:</b> The signal is not strongly separated. Review the top candidate classes
-        below and compare them with the reference audio to confirm the correct fault category.
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown("""<div class="ds-notice"><b>Notice:</b> The signal is not strongly separated. Review the top candidate classes below and compare them with the reference audio to confirm the correct fault category.</div>""", unsafe_allow_html=True)
     st.markdown('<div class="ds-card">', unsafe_allow_html=True)
     st.markdown('<div style="font-size:11px;font-weight:700;color:#475569;font-family:IBM Plex Mono,monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">Top 3 likely sound categories</div>', unsafe_allow_html=True)
     pills = "".join([f'<span class="ds-pill">{pretty_label(encoder.classes_[idx])}</span>' for idx in top_indices[:3]])
     st.markdown(pills + "</div>", unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="ds-meta">
-        <div class="ds-meta-item">
-            <div class="ds-meta-key">Audio file</div>
-            <div class="ds-meta-val">{result['audio_name']}</div>
-        </div>
-        <div class="ds-meta-item">
-            <div class="ds-meta-key">Duration</div>
-            <div class="ds-meta-val">{result['duration_sec']} sec</div>
-        </div>
-        <div class="ds-meta-item">
-            <div class="ds-meta-key">Windows</div>
-            <div class="ds-meta-val">{result['num_windows']}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown(f"""<div class="ds-meta"><div class="ds-meta-item"><div class="ds-meta-key">Audio file</div><div class="ds-meta-val">{result['audio_name']}</div></div><div class="ds-meta-item"><div class="ds-meta-key">Duration</div><div class="ds-meta-val">{result['duration_sec']} sec</div></div><div class="ds-meta-item"><div class="ds-meta-key">Windows</div><div class="ds-meta-val">{result['num_windows']}</div></div></div>""", unsafe_allow_html=True)
     with st.expander("Signal audit \u2014 all class probabilities"):
         st.json(result["all_probs"])
-
     col_a, col_b = st.columns(2)
     with col_a:
         if st.button("Continue to comparison \u2192"):
@@ -712,61 +512,34 @@ elif st.session_state.stage == "low_confidence":
             do_restart(); st.rerun()
 
 # ==============================================================================
-# 15. STAGE 2B: REFINE
+# 16. STAGE 2B: REFINE
 # ==============================================================================
 elif st.session_state.stage == "refine":
-
     st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Step 2 of 3 &nbsp;&mdash;&nbsp; Collaborative Validation</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section">Compare to Reference Audio</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section-sub">Select the final class, then tick the reference clips that sound closest to your recording.</div>', unsafe_allow_html=True)
-
     result      = st.session_state.result
     top_indices = result["top_indices"]
-
     primary_match_raw   = encoder.classes_[top_indices[0]]
     secondary_match_raw = encoder.classes_[top_indices[1]] if len(top_indices) > 1 else "N/A"
     primary_match   = pretty_label(primary_match_raw)
     secondary_match = pretty_label(secondary_match_raw) if secondary_match_raw != "N/A" else "N/A"
-
     c1, c2 = st.columns(2)
     with c1:
-        st.metric("Primary Match",   primary_match)
+        st.metric("Primary Match", primary_match)
     with c2:
         st.metric("Secondary Match", secondary_match)
-
     st.markdown('<div class="ds-card">', unsafe_allow_html=True)
     st.markdown('<div style="font-size:11px;font-weight:700;color:#475569;font-family:IBM Plex Mono,monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">Top 5 likely sound categories</div>', unsafe_allow_html=True)
     pills = "".join([f'<span class="ds-pill">{pretty_label(encoder.classes_[idx])}</span>' for idx in top_indices])
     st.markdown(pills + "</div>", unsafe_allow_html=True)
-
     candidate_labels = [encoder.classes_[idx] for idx in top_indices[:4]]
-    st.session_state.selected_reference_class = (
-        st.session_state.selected_reference_class
-        if st.session_state.selected_reference_class in candidate_labels
-        else candidate_labels[0]
-    )
-
-    selected_label = st.radio(
-        "Choose the final class",
-        candidate_labels,
-        format_func=pretty_label,
-        index=candidate_labels.index(st.session_state.selected_reference_class),
-    )
+    st.session_state.selected_reference_class = (st.session_state.selected_reference_class if st.session_state.selected_reference_class in candidate_labels else candidate_labels[0])
+    selected_label = st.radio("Choose the final class", candidate_labels, format_func=pretty_label, index=candidate_labels.index(st.session_state.selected_reference_class))
     st.session_state.selected_reference_class = selected_label
-
-    st.markdown(f"""
-    <div class="ds-soft-card">
-        <div style="font-size:11px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;
-                    text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Selected final class</div>
-        <div style="font-size:20px;font-weight:800;color:#93c5fd;font-family:'IBM Plex Mono',monospace;">
-            {pretty_label(selected_label)}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown(f"""<div class="ds-soft-card"><div style="font-size:11px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Selected final class</div><div style="font-size:20px;font-weight:800;color:#93c5fd;font-family:'IBM Plex Mono',monospace;">{pretty_label(selected_label)}</div></div>""", unsafe_allow_html=True)
     ref_files      = get_reference_audio_files(selected_label)
     selected_clips = []
-
     if ref_files:
         st.markdown('<div style="font-size:15px;font-weight:700;color:#94a3b8;margin-bottom:12px;">Tick the reference clips that sound closest to your car</div>', unsafe_allow_html=True)
         for i, audio_path in enumerate(ref_files, start=1):
@@ -779,160 +552,69 @@ elif st.session_state.stage == "refine":
             st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
     else:
         st.warning(f"No reference audio files found for: {pretty_label(selected_label)}")
-
     st.session_state.selected_reference_clips = selected_clips
-
     st.markdown("<br>", unsafe_allow_html=True)
-    st.session_state.user_input = st.text_area(
-        "Optional note (describe what you hear)",
-        value=st.session_state.user_input,
-        height=100,
-        placeholder="Example: stronger at idle, metallic noise, sharper at startup...",
-    )
-
+    st.session_state.user_input = st.text_area("Optional note (describe what you hear)", value=st.session_state.user_input, height=100, placeholder="Example: stronger at idle, metallic noise, sharper at startup...")
     with st.expander("Model probability audit"):
         st.json(result["all_probs"])
-
     st.markdown("<br>", unsafe_allow_html=True)
     col_1, col_2 = st.columns(2)
     with col_1:
         if st.button("Generate Final Report \u2192"):
             try:
                 if st.session_state.uploaded_temp_path:
-                    saved_path = save_feedback_example(
-                        source_audio_path=st.session_state.uploaded_temp_path,
-                        selected_label=st.session_state.selected_reference_class,
-                        selected_clips=st.session_state.selected_reference_clips,
-                        result=st.session_state.result,
-                        user_note=st.session_state.user_input,
-                    )
+                    saved_path = save_feedback_example(source_audio_path=st.session_state.uploaded_temp_path,selected_label=st.session_state.selected_reference_class,selected_clips=st.session_state.selected_reference_clips,result=st.session_state.result,user_note=st.session_state.user_input)
                     st.session_state.saved_feedback_path = saved_path
             except Exception as e:
                 st.warning(f"Feedback save failed: {e}")
-            st.session_state.stage = "final"
-            st.rerun()
+            st.session_state.stage = "final"; st.rerun()
     with col_2:
         if st.button("\u21ba Restart"):
             do_restart(); st.rerun()
 
 # ==============================================================================
-# 16. STAGE 3: FINAL
+# 17. STAGE 3: FINAL
 # ==============================================================================
 elif st.session_state.stage == "final":
-
     st.markdown('<div class="ds-step-badge">&#10003;&nbsp; Step 3 of 3 &nbsp;&mdash;&nbsp; Diagnostic Conclusion</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section">Your Diagnosis</div>', unsafe_allow_html=True)
-
     result         = st.session_state.result
     vehicle        = result["vehicle"]
     selected_label = st.session_state.selected_reference_class
     selected_clips = st.session_state.selected_reference_clips
-
-    st.markdown(f"""
-    <div class="ds-success">
-        <span style="font-size:22px;line-height:1;">&#10003;</span>
-        Final signal confirmed: &nbsp;
-        <code style="color:#6ee7b7;background:rgba(16,185,129,0.12);padding:3px 10px;
-                     border-radius:6px;font-size:15px;font-family:'IBM Plex Mono',monospace;font-weight:700;">
-            {pretty_label(selected_label)}
-        </code>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="ds-card">
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
-            <div>
-                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Vehicle</div>
-                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">
-                    {vehicle['year']} {vehicle['make']} {vehicle['model']}
-                </div>
-            </div>
-            <div>
-                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Mileage</div>
-                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">{vehicle['miles']:,} mi</div>
-            </div>
-            <div>
-                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Final Signal</div>
-                <div style="font-size:17px;font-weight:800;color:#93c5fd;font-family:'IBM Plex Mono',monospace;">
-                    {pretty_label(selected_label)}
-                </div>
-            </div>
-            <div>
-                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Reference Clips</div>
-                <div style="font-size:14px;font-weight:700;color:#64748b;font-family:'IBM Plex Mono',monospace;">
-                    {", ".join(selected_clips) if selected_clips else "None selected"}
-                </div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    expert_bullets = build_expert_recommendations(
-        selected_label=selected_label,
-        vehicle=vehicle,
-        selected_clips=selected_clips,
-        user_note=st.session_state.user_input,
-    )
-
-    age_years   = 2026 - vehicle['year']
-    high_miles  = vehicle['miles'] >= 120000
-    note_text   = (st.session_state.user_input or "").strip()
-
-    rewrite_prompt = f"""
-You are a professional automotive diagnostic advisor writing a concise inspection summary for a real vehicle owner.
-
+    st.markdown(f"""<div class="ds-success"><span style="font-size:22px;line-height:1;">&#10003;</span>Final signal confirmed: &nbsp;<code style="color:#6ee7b7;background:rgba(16,185,129,0.12);padding:3px 10px;border-radius:6px;font-size:15px;font-family:'IBM Plex Mono',monospace;font-weight:700;">{pretty_label(selected_label)}</code></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="ds-card"><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;"><div><div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Vehicle</div><div style="font-size:17px;font-weight:800;color:#f1f5f9;">{vehicle['year']} {vehicle['make']} {vehicle['model']}</div></div><div><div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Mileage</div><div style="font-size:17px;font-weight:800;color:#f1f5f9;">{vehicle['miles']:,} mi</div></div><div><div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Final Signal</div><div style="font-size:17px;font-weight:800;color:#93c5fd;font-family:'IBM Plex Mono',monospace;">{pretty_label(selected_label)}</div></div><div><div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Reference Clips</div><div style="font-size:14px;font-weight:700;color:#64748b;font-family:'IBM Plex Mono',monospace;">{", ".join(selected_clips) if selected_clips else "None selected"}</div></div></div></div>""", unsafe_allow_html=True)
+    expert_bullets = build_expert_recommendations(selected_label=selected_label,vehicle=vehicle,selected_clips=selected_clips,user_note=st.session_state.user_input)
+    age_years  = 2026 - vehicle['year']
+    high_miles = vehicle['miles'] >= 120000
+    note_text  = (st.session_state.user_input or "").strip()
+    rewrite_prompt = f"""You are a professional automotive diagnostic advisor writing a concise inspection summary for a real vehicle owner.
 VEHICLE DETAILS:
 - {vehicle['year']} {vehicle['make']} {vehicle['model']}
 - Mileage: {vehicle['miles']:,} miles
 - Age: {age_years} years old
 - High mileage vehicle: {"YES" if high_miles else "NO"}
-
 ACOUSTIC DIAGNOSIS:
 - Confirmed fault class: {selected_label}
 - Human-readable: {pretty_label(selected_label)}
 - Reference clips matched: {", ".join(selected_clips) if selected_clips else "none"}
 - Owner description: {note_text if note_text else "no additional note provided"}
-
 EXPERT BASE RECOMMENDATIONS:
 {chr(10).join(expert_bullets)}
-
-YOUR TASK:
-Rewrite the 3 base recommendations above into 3 clear, actionable inspection steps.
-Each step must:
-1. Be specific to a {vehicle['year']} {vehicle['make']} {vehicle['model']} — mention the vehicle by name in at least one bullet
-2. Reference the mileage ({vehicle['miles']:,} mi) where relevant to explain wear likelihood
-3. Be directly tied to the confirmed fault class "{pretty_label(selected_label)}" — do not drift to other faults
-4. Start with a concrete action verb (Inspect, Check, Test, Verify, Listen for, etc.)
-5. Be one sentence only per bullet — no sub-lists, no paragraphs
-
-FORMAT: Return exactly 3 lines, each starting with "- "
-Do not add headers, do not add confidence scores, do not mention probabilities.
-Do not say "may" or "might" — be direct and practical.
-"""
+YOUR TASK: Rewrite the 3 base recommendations into 3 clear actionable inspection steps.
+Each step must: mention the {vehicle['year']} {vehicle['make']} {vehicle['model']} by name in at least one bullet, reference the mileage ({vehicle['miles']:,} mi) where relevant, be tied to "{pretty_label(selected_label)}", start with a concrete action verb.
+FORMAT: Return exactly 3 lines each starting with "- ". No headers, no probabilities, no "may" or "might"."""
     bullet_text    = safe_gemini_generate(rewrite_prompt)
     gemini_bullets = [l.strip() for l in bullet_text.splitlines() if l.strip().startswith("-")]
     bullets        = gemini_bullets[:3] if len(gemini_bullets) >= 3 else expert_bullets
-
     st.markdown('<div style="font-size:12px;font-weight:700;color:#475569;font-family:IBM Plex Mono,monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">Suggested actions</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-bullet-box">', unsafe_allow_html=True)
     for i, b in enumerate(bullets):
         text = b.lstrip("- ").strip()
-        st.markdown(f"""
-        <div class="ds-bullet-item">
-            <div class="ds-bullet-num">{i+1}</div>
-            <div>{text}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="ds-bullet-item"><div class="ds-bullet-num">{i+1}</div><div>{text}</div></div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
-
     if st.session_state.saved_feedback_path:
         st.markdown(f"<p style='color:#334155;font-size:12px;font-family:IBM Plex Mono,monospace;margin-top:8px;'>Feedback saved: {st.session_state.saved_feedback_path}</p>", unsafe_allow_html=True)
-
     with st.expander("Computational audit"):
         st.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         st.write(f"Windows evaluated: {result['num_windows']}")
@@ -941,7 +623,6 @@ Do not say "may" or "might" — be direct and practical.
         st.write(f"Selected reference clips: {selected_clips if selected_clips else 'None'}")
         st.write("All class probabilities:")
         st.json(result["all_probs"])
-
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("\u21ba Restart Diagnostic"):
         do_restart(); st.rerun()
