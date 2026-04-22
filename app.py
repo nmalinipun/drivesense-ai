@@ -94,7 +94,10 @@ li[role="option"],div[role="option"]{background:#1e293b!important;color:#fff!imp
 li[role="option"] *,div[role="option"] *{color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important}
 li[role="option"]:hover,div[role="option"]:hover{background:#334155!important}
 li[aria-selected="true"],div[aria-selected="true"]{background:#2563eb!important}
-div[data-testid="stFileUploader"]{background:transparent!important;border:none!important;border-radius:0!important;padding:0!important;margin-top:-8px!important}
+div[data-testid="stFileUploader"]{background:rgba(30,41,59,0.6)!important;border:2px dashed rgba(59,130,246,0.4)!important;border-radius:14px!important;padding:20px!important}
+div[data-testid="stFileUploaderDropzone"]{background:transparent!important;border:none!important;min-height:60px!important}
+div[data-testid="stAudioInput"]{background:rgba(30,41,59,0.4)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:14px!important;padding:20px!important;display:flex!important;justify-content:center!important}
+div[data-testid="stAudioInput"]>div{background:transparent!important;border:none!important;display:flex!important;justify-content:center!important}
 div[data-testid="stFileUploaderDropzone"]{background:rgba(30,41,59,0.6)!important;border:1.5px dashed rgba(255,255,255,0.12)!important;border-radius:12px!important;min-height:110px!important}
 div[data-testid="stFileUploaderDropzone"] *{color:#94a3b8!important;font-size:15px!important;font-weight:600!important}
 div[data-testid="stFileUploader"] small{color:#64748b!important}
@@ -430,20 +433,58 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Vehicle Profile — VP3 styled expander
+# Vehicle Profile — VP3 full custom design
 st.markdown("""
 <style>
-div[data-testid="stExpander"]:first-of-type details{
-    background:rgba(255,255,255,0.03)!important;
-    border:1px solid rgba(255,255,255,0.09)!important;
-    border-radius:12px!important;
+/* Target ONLY the first expander - vehicle profile */
+section.main > div > div:nth-child(1) div[data-testid="stExpander"] details,
+div[data-testid="stVerticalBlock"] > div:has(> div[data-testid="stExpander"]:first-child) details {
+    border:none!important;background:transparent!important;
 }
-div[data-testid="stExpander"]:first-of-type summary{
-    padding:12px 16px!important;
+.vp3-expander details {
+    background:transparent!important;border:none!important;padding:0!important;
+}
+.vp3-expander details > summary {
+    background:rgba(255,255,255,0.03)!important;
+    border:1px solid rgba(255,255,255,0.08)!important;
+    border-radius:12px!important;
+    padding:0!important;
+    list-style:none!important;
+}
+.vp3-expander details > summary::-webkit-details-marker{display:none}
+.vp3-expander details[open] > summary{
+    border-radius:12px 12px 0 0!important;
+    border-bottom:1px solid rgba(255,255,255,0.06)!important;
+}
+.vp3-expander details > div{
+    background:rgba(255,255,255,0.02)!important;
+    border:1px solid rgba(255,255,255,0.08)!important;
+    border-top:none!important;
+    border-radius:0 0 12px 12px!important;
+    padding:16px!important;
 }
 </style>
 """, unsafe_allow_html=True)
-with st.expander("\U0001f697  Vehicle Profile  —  tap to set make, model & year", expanded=False):
+
+with st.expander("", expanded=False):
+    # Custom VP3 header rendered inside summary via markdown hack
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
+                border-radius:12px;margin:-1rem -1rem 1rem -1rem;cursor:pointer;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#2563eb;
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:18px;flex-shrink:0;">&#128663;</div>
+        <div>
+            <div style="font-size:15px;font-weight:800;color:#f1f5f9;
+                        font-family:'Syne',sans-serif;line-height:1.2;">Vehicle Profile</div>
+            <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
+                        text-transform:uppercase;letter-spacing:1.2px;margin-top:2px;">
+                SET MAKE, MODEL &amp; YEAR BELOW</div>
+        </div>
+        <div style="margin-left:auto;color:#3b82f6;font-size:20px;">&#8964;</div>
+    </div>
+    """, unsafe_allow_html=True)
     sorted_makes = sorted(car_data.keys())
     default_make_index = sorted_makes.index("Lexus") if "Lexus" in sorted_makes else 0
     col1, col2 = st.columns(2)
@@ -473,32 +514,23 @@ st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
 # ==============================================================================
 # ==============================================================================
+# ==============================================================================
 # 14. STAGE 1: INPUT
 # ==============================================================================
 if st.session_state.stage == "input":
     st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Step 1 of 3 &nbsp;&mdash;&nbsp; Acoustic Capture</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section">Capture your car sound</div>', unsafe_allow_html=True)
-    st.markdown('<div class="ds-section-sub">Record live using your phone microphone or upload an existing audio file.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="ds-section-sub">Record live using your microphone or upload an existing audio file.</div>', unsafe_allow_html=True)
 
     tab_record, tab_upload = st.tabs(["  Record Live", "  Upload File"])
     audio_data = None
 
+    # ── RECORD LIVE TAB ──────────────────────────────────────────────────────
     with tab_record:
-        col_l, col_c, col_r = st.columns([1,2,1])
-        with col_c:
-            st.markdown("""
-            <div style="text-align:center;padding:24px 0 8px;">
-                <div style="font-size:18px;font-weight:800;color:#f1f5f9;
-                            font-family:'Syne',sans-serif;margin-bottom:5px;">Tap to record</div>
-                <div style="font-size:11px;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">
-                    Hold phone near car sound</div>
-            </div>
-            """, unsafe_allow_html=True)
-            recorded_audio = st.audio_input("Record", label_visibility="collapsed")
+        recorded_audio = st.audio_input("Record car sound", label_visibility="collapsed")
         if recorded_audio is not None:
             audio_data = recorded_audio
-            st.markdown('''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:10px 16px;margin:8px 0;text-align:center;color:#34d399;font-size:14px;font-weight:700;font-family:'IBM Plex Mono',monospace;">&#10003; Recording captured — tap Run Diagnostic Scan below</div>''', unsafe_allow_html=True)
+            st.markdown('<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:8px 0;text-align:center;color:#34d399;font-size:14px;font-weight:700;font-family:IBM Plex Mono,monospace;">&#10003; Recording ready &mdash; tap Run Diagnostic Scan below</div>', unsafe_allow_html=True)
             if st.session_state.get("uploaded_filename") != "live_recording.wav":
                 temp_path = save_uploaded_file_temporarily(recorded_audio)
                 st.session_state.uploaded_temp_path = temp_path
@@ -506,18 +538,23 @@ if st.session_state.stage == "input":
         else:
             audio_data = None
 
+    # ── UPLOAD FILE TAB ───────────────────────────────────────────────────────
     with tab_upload:
-        st.markdown('''<div style="border:2px dashed rgba(59,130,246,0.4);border-radius:14px;padding:24px;margin-bottom:12px;text-align:center;"><div style="font-size:32px;margin-bottom:8px">&#128190;</div><div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:4px;">Drop audio file here or browse</div><div style="font-size:12px;color:#475569;font-family:IBM Plex Mono,monospace;letter-spacing:1px;">WAV &middot; MP3 &middot; M4A</div></div>''', unsafe_allow_html=True)
-        uploaded = st.file_uploader("Choose audio file", type=["wav","mp3","m4a"], label_visibility="collapsed")
+        uploaded = st.file_uploader(
+            "Drop audio file here — WAV, MP3, M4A",
+            type=["wav", "mp3", "m4a"],
+            label_visibility="visible"
+        )
         if uploaded is not None:
             audio_data = uploaded
-            st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:8px 0;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:20px;">&#10003;</span><span style="color:#6ee7b7;font-size:15px;font-weight:700;">{uploaded.name}</span></div>''', unsafe_allow_html=True)
+            st.markdown(f'<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:8px 0;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:20px;">&#10003;</span><span style="color:#6ee7b7;font-size:15px;font-weight:700;">{uploaded.name}</span></div>', unsafe_allow_html=True)
             st.audio(uploaded)
             if st.session_state.get("uploaded_filename") != uploaded.name:
                 temp_path = save_uploaded_file_temporarily(uploaded)
                 st.session_state.uploaded_temp_path = temp_path
                 st.session_state.uploaded_filename = uploaded.name
 
+    # ── RUN SCAN BUTTON ───────────────────────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
     if audio_data and st.button("Run Diagnostic Scan \u2192"):
         with st.spinner("Processing acoustic signal..."):
@@ -529,7 +566,16 @@ if st.session_state.stage == "input":
                 top_indices = result["top_indices"]
                 top_idx     = int(top_indices[0])
                 top_prob    = float(mean_probs[top_idx])
-                st.session_state.result = {"mean_probs":mean_probs,"top_indices":top_indices,"top_idx":top_idx,"top_prob":top_prob,"num_windows":result["num_windows"],"duration_sec":result["duration_sec"],"all_probs":result["all_probs"],"audio_name":getattr(audio_data,"name","live_recording.wav"),"vehicle":{"make":v_make,"model":v_model,"year":v_year,"miles":v_miles}}
+                audio_name  = getattr(audio_data, "name", "live_recording.wav")
+                st.session_state.result = {
+                    "mean_probs":mean_probs, "top_indices":top_indices,
+                    "top_idx":top_idx, "top_prob":top_prob,
+                    "num_windows":result["num_windows"],
+                    "duration_sec":result["duration_sec"],
+                    "all_probs":result["all_probs"],
+                    "audio_name":audio_name,
+                    "vehicle":{"make":v_make,"model":v_model,"year":v_year,"miles":v_miles}
+                }
                 st.session_state.selected_reference_class = encoder.classes_[top_indices[0]]
                 st.session_state.selected_reference_clips = []
                 st.session_state.stage = "low_confidence" if top_prob < CONFIDENCE_THRESHOLD else "refine"
