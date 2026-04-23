@@ -25,7 +25,11 @@ st.set_page_config(page_title="DriveSense AI", page_icon="🚗", layout="wide", 
 TARGET_SR = 22050
 WINDOW_SECONDS = 3.0
 WINDOW_SAMPLES = int(TARGET_SR * WINDOW_SECONDS)
-CONFIDENCE_THRESHOLD = 0.60
+CONFIDENT_THRESHOLD = 0.75
+AMBIGUOUS_THRESHOLD = 0.55
+MIN_MARGIN = 0.10
+MIN_DURATION_SEC = 1.5
+MIN_RMS = 0.01
 
 BASE_DIR         = Path(__file__).resolve().parent
 MODEL_PATH       = BASE_DIR / "project_milo_final_classifier.joblib"
@@ -261,7 +265,15 @@ def make_windows(y):
     if len(windows) == 0 or not np.array_equal(windows[-1], last_window):
         windows.append(last_window)
     return windows
-
+def get_audio_quality_stats(y, sr):
+    duration_sec = len(y) / sr if len(y) > 0 else 0.0
+    rms = float(np.sqrt(np.mean(np.square(y)))) if len(y) > 0 else 0.0
+    peak = float(np.max(np.abs(y))) if len(y) > 0 else 0.0
+    return {
+        "duration_sec": round(duration_sec, 2),
+        "rms": rms,
+        "peak": peak
+    }
 def extract_60dim_features(y, sr):
     mfcc      = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
     mfcc_mean = np.mean(mfcc, axis=1)
@@ -293,9 +305,37 @@ def predict_from_audio(audio_file):
     y = load_and_prepare_audio(audio_file)
     if y.size == 0:
         raise ValueError("Uploaded audio could not be read.")
+
+    quality = get_audio_quality_stats(y, TARGET_SR)
+
+    if quality["duration_sec"] < MIN_DURATION_SEC:
+        return {
+            "status": "unknown",
+            "reason": "Audio is too short for reliable diagnosis.",
+            "top_indices": [],
+            "mean_probs": None,
+            "num_windows": 0,
+            "duration_sec": quality["duration_sec"],
+            "all_probs": {},
+            "quality": quality
+        }
+
+    if quality["rms"] < MIN_RMS:
+        return {
+            "status": "unknown",
+            "reason": "Audio signal is too weak or too quiet.",
+            "top_indices": [],
+            "mean_probs": None,
+            "num_windows": 0,
+            "duration_sec": quality["duration_sec"],
+            "all_probs": {},
+            "quality": quality
+        }
+
     windows = make_windows(y)
     if not windows:
         raise ValueError("No valid audio windows could be created.")
+
     prob_list = []
     for win in windows:
         feats = extract_60dim_features(win, TARGET_SR)
@@ -306,11 +346,40 @@ def predict_from_audio(audio_file):
         else:
             raise ValueError("Model does not support probability-style inference.")
         prob_list.append(probs)
-    mean_probs  = np.mean(np.vstack(prob_list), axis=0)
+
+    mean_probs = np.mean(np.vstack(prob_list), axis=0)
     top_indices = np.argsort(mean_probs)[-5:][::-1]
-    all_probs   = {encoder.classes_[i]: float(mean_probs[i]) for i in range(len(encoder.classes_))}
-    return {"mean_probs":mean_probs,"top_indices":top_indices,
-            "num_windows":len(windows),"duration_sec":round(len(y)/TARGET_SR,2),"all_probs":all_probs}
+    all_probs = {encoder.classes_[i]: float(mean_probs[i]) for i in range(len(encoder.classes_))}
+
+    top1_idx = int(top_indices[0])
+    top2_idx = int(top_indices[1]) if len(top_indices) > 1 else int(top_indices[0])
+    top1_prob = float(mean_probs[top1_idx])
+    top2_prob = float(mean_probs[top2_idx])
+    margin = top1_prob - top2_prob
+
+    if top1_prob < AMBIGUOUS_THRESHOLD:
+        status = "unknown"
+        reason = "This audio does not clearly match any trained vehicle sound class."
+    elif top1_prob < CONFIDENT_THRESHOLD or margin < MIN_MARGIN:
+        status = "ambiguous"
+        reason = "The audio partially matches trained classes, but the result is not fully separated."
+    else:
+        status = "confident"
+        reason = "A reliable acoustic match was found."
+
+    return {
+        "status": status,
+        "reason": reason,
+        "mean_probs": mean_probs,
+        "top_indices": top_indices,
+        "top1_prob": top1_prob,
+        "top2_prob": top2_prob,
+        "margin": margin,
+        "num_windows": len(windows),
+        "duration_sec": quality["duration_sec"],
+        "all_probs": all_probs,
+        "quality": quality
+    }
 
 # ==============================================================================
 # 7. GEMINI HELPER
@@ -519,24 +588,88 @@ if st.session_state.stage == "input":
                 st.session_state.uploaded_filename = uploaded.name
 
     st.markdown("<br>", unsafe_allow_html=True)
-    if audio_data and st.button("Run Diagnostic Scan \u2192"):
+    if audio_data and st.button("Run Diagnostic Scan →"):
         with st.spinner("Processing acoustic signal..."):
             try:
                 if not st.session_state.uploaded_temp_path:
                     raise ValueError("Temporary uploaded file path was not created.")
-                result      = predict_from_audio(st.session_state.uploaded_temp_path)
-                mean_probs  = result["mean_probs"]
-                top_indices = result["top_indices"]
-                top_idx     = int(top_indices[0])
-                top_prob    = float(mean_probs[top_idx])
-                st.session_state.result = {"mean_probs":mean_probs,"top_indices":top_indices,"top_idx":top_idx,"top_prob":top_prob,"num_windows":result["num_windows"],"duration_sec":result["duration_sec"],"all_probs":result["all_probs"],"audio_name":getattr(audio_data,"name","live_recording.wav"),"vehicle":{"make":v_make,"model":v_model,"year":v_year,"miles":v_miles}}
-                st.session_state.selected_reference_class = encoder.classes_[top_indices[0]]
-                st.session_state.selected_reference_clips = []
-                st.session_state.stage = "low_confidence" if top_prob < CONFIDENCE_THRESHOLD else "refine"
+
+                result = predict_from_audio(st.session_state.uploaded_temp_path)
+
+                st.session_state.result = {
+                    **result,
+                    "audio_name": getattr(audio_data, "name", "live_recording.wav"),
+                    "vehicle": {
+                        "make": v_make,
+                        "model": v_model,
+                        "year": v_year,
+                        "miles": v_miles
+                    }
+                }
+
+                if result["status"] == "unknown":
+                    st.session_state.selected_reference_class = None
+                    st.session_state.selected_reference_clips = []
+                    st.session_state.stage = "unknown"
+
+                elif result["status"] == "ambiguous":
+                    top_indices = result["top_indices"]
+                    st.session_state.selected_reference_class = encoder.classes_[top_indices[0]]
+                    st.session_state.selected_reference_clips = []
+                    st.session_state.stage = "low_confidence"
+
+                else:
+                    top_indices = result["top_indices"]
+                    st.session_state.selected_reference_class = encoder.classes_[top_indices[0]]
+                    st.session_state.selected_reference_clips = []
+                    st.session_state.stage = "refine"
+
                 st.rerun()
+
             except Exception as e:
                 st.error(f"Prediction failed: {e}")
+elif st.session_state.stage == "unknown":
+    st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Scan Result &nbsp;&mdash;&nbsp; No Reliable Match</div>', unsafe_allow_html=True)
+    st.markdown('<div class="ds-section">No Reliable Match</div>', unsafe_allow_html=True)
 
+    result = st.session_state.result
+    vehicle = result["vehicle"]
+    reason = result.get("reason", "This audio does not clearly match any trained vehicle sound class.")
+    quality = result.get("quality", {})
+
+    st.markdown(f"""
+    <div class="ds-notice">
+        <b>Result:</b> {reason}<br><br>
+        Please upload a clearer vehicle sound and try again.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="ds-card">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+            <div>
+                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Vehicle</div>
+                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">{vehicle['year']} {vehicle['make']} {vehicle['model']}</div>
+            </div>
+            <div>
+                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Mileage</div>
+                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">{vehicle['miles']:,} mi</div>
+            </div>
+            <div>
+                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Audio Duration</div>
+                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">{result.get('duration_sec', 0)} sec</div>
+            </div>
+            <div>
+                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Signal RMS</div>
+                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">{quality.get('rms', 0):.4f}</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("↺ Try Another Audio"):
+        do_restart()
+        st.rerun()
 elif st.session_state.stage == "low_confidence":
     st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Step 2 of 3 &nbsp;&mdash;&nbsp; Review Candidates</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section">Review Candidate Classes</div>', unsafe_allow_html=True)
