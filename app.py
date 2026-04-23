@@ -28,8 +28,8 @@ WINDOW_SAMPLES = int(TARGET_SR * WINDOW_SECONDS)
 CONFIDENT_THRESHOLD = 0.60
 AMBIGUOUS_THRESHOLD = 0.35
 MIN_MARGIN = 0.04
-MIN_DURATION_SEC = 1.5
-MIN_RMS = 0.01
+MIN_DURATION_SEC = 1.0
+MIN_RMS = 0.005
 
 BASE_DIR         = Path(__file__).resolve().parent
 MODEL_PATH       = BASE_DIR / "project_milo_final_classifier.joblib"
