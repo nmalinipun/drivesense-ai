@@ -25,7 +25,11 @@ st.set_page_config(page_title="DriveSense AI", page_icon="🚗", layout="wide", 
 TARGET_SR = 22050
 WINDOW_SECONDS = 3.0
 WINDOW_SAMPLES = int(TARGET_SR * WINDOW_SECONDS)
-CONFIDENCE_THRESHOLD = 0.60
+CONFIDENT_THRESHOLD = 0.60
+AMBIGUOUS_THRESHOLD = 0.35
+MIN_MARGIN = 0.04
+MIN_DURATION_SEC = 1.0
+MIN_RMS = 0.005
 
 BASE_DIR         = Path(__file__).resolve().parent
 MODEL_PATH       = BASE_DIR / "project_milo_final_classifier.joblib"
@@ -94,9 +98,8 @@ li[role="option"],div[role="option"]{background:#1e293b!important;color:#fff!imp
 li[role="option"] *,div[role="option"] *{color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important}
 li[role="option"]:hover,div[role="option"]:hover{background:#334155!important}
 li[aria-selected="true"],div[aria-selected="true"]{background:#2563eb!important}
-div[data-testid="stFileUploader"]{background:transparent!important;border:none!important;padding:0!important}
-div[data-testid="stFileUploaderDropzone"]{background:rgba(15,23,42,0.6)!important;border:2px dashed rgba(59,130,246,0.4)!important;border-radius:14px!important;min-height:120px!important}
-div[data-testid="stAudioInput"]{background:rgba(15,23,42,0.8)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:14px!important;padding:12px 16px!important}
+div[data-testid="stFileUploader"]{background:transparent!important;border:none!important;border-radius:0!important;padding:0!important;margin-top:-8px!important}
+div[data-testid="stFileUploaderDropzone"]{background:rgba(30,41,59,0.6)!important;border:1.5px dashed rgba(255,255,255,0.12)!important;border-radius:12px!important;min-height:110px!important}
 div[data-testid="stFileUploaderDropzone"] *{color:#94a3b8!important;font-size:15px!important;font-weight:600!important}
 div[data-testid="stFileUploader"] small{color:#64748b!important}
 div[data-testid="stFileUploader"] button{background:#2563eb!important;color:#fff!important;border:none!important;border-radius:10px!important;font-weight:700!important;font-size:14px!important;padding:0.5rem 1.2rem!important}
@@ -262,7 +265,15 @@ def make_windows(y):
     if len(windows) == 0 or not np.array_equal(windows[-1], last_window):
         windows.append(last_window)
     return windows
-
+def get_audio_quality_stats(y, sr):
+    duration_sec = len(y) / sr if len(y) > 0 else 0.0
+    rms = float(np.sqrt(np.mean(np.square(y)))) if len(y) > 0 else 0.0
+    peak = float(np.max(np.abs(y))) if len(y) > 0 else 0.0
+    return {
+        "duration_sec": round(duration_sec, 2),
+        "rms": rms,
+        "peak": peak
+    }
 def extract_60dim_features(y, sr):
     mfcc      = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
     mfcc_mean = np.mean(mfcc, axis=1)
@@ -294,9 +305,37 @@ def predict_from_audio(audio_file):
     y = load_and_prepare_audio(audio_file)
     if y.size == 0:
         raise ValueError("Uploaded audio could not be read.")
+
+    quality = get_audio_quality_stats(y, TARGET_SR)
+
+    if quality["duration_sec"] < MIN_DURATION_SEC:
+        return {
+            "status": "unknown",
+            "reason": "Audio is too short for reliable diagnosis.",
+            "top_indices": [],
+            "mean_probs": None,
+            "num_windows": 0,
+            "duration_sec": quality["duration_sec"],
+            "all_probs": {},
+            "quality": quality
+        }
+
+    if quality["rms"] < MIN_RMS:
+        return {
+            "status": "unknown",
+            "reason": "Audio signal is too weak or too quiet.",
+            "top_indices": [],
+            "mean_probs": None,
+            "num_windows": 0,
+            "duration_sec": quality["duration_sec"],
+            "all_probs": {},
+            "quality": quality
+        }
+
     windows = make_windows(y)
     if not windows:
         raise ValueError("No valid audio windows could be created.")
+
     prob_list = []
     for win in windows:
         feats = extract_60dim_features(win, TARGET_SR)
@@ -307,11 +346,40 @@ def predict_from_audio(audio_file):
         else:
             raise ValueError("Model does not support probability-style inference.")
         prob_list.append(probs)
-    mean_probs  = np.mean(np.vstack(prob_list), axis=0)
+
+    mean_probs = np.mean(np.vstack(prob_list), axis=0)
     top_indices = np.argsort(mean_probs)[-5:][::-1]
-    all_probs   = {encoder.classes_[i]: float(mean_probs[i]) for i in range(len(encoder.classes_))}
-    return {"mean_probs":mean_probs,"top_indices":top_indices,
-            "num_windows":len(windows),"duration_sec":round(len(y)/TARGET_SR,2),"all_probs":all_probs}
+    all_probs = {encoder.classes_[i]: float(mean_probs[i]) for i in range(len(encoder.classes_))}
+
+    top1_idx = int(top_indices[0])
+    top2_idx = int(top_indices[1]) if len(top_indices) > 1 else int(top_indices[0])
+    top1_prob = float(mean_probs[top1_idx])
+    top2_prob = float(mean_probs[top2_idx])
+    margin = top1_prob - top2_prob
+
+    if top1_prob < AMBIGUOUS_THRESHOLD:
+        status = "unknown"
+        reason = "This audio does not clearly match any trained vehicle sound class."
+    elif top1_prob < CONFIDENT_THRESHOLD or margin < MIN_MARGIN:
+        status = "ambiguous"
+        reason = "The audio partially matches trained classes, but the result is not fully separated."
+    else:
+        status = "confident"
+        reason = "A reliable acoustic match was found."
+
+    return {
+        "status": status,
+        "reason": reason,
+        "mean_probs": mean_probs,
+        "top_indices": top_indices,
+        "top1_prob": top1_prob,
+        "top2_prob": top2_prob,
+        "margin": margin,
+        "num_windows": len(windows),
+        "duration_sec": quality["duration_sec"],
+        "all_probs": all_probs,
+        "quality": quality
+    }
 
 # ==============================================================================
 # 7. GEMINI HELPER
@@ -431,30 +499,20 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Vehicle Profile — VP3 clean expander
+# Vehicle Profile — VP3 styled expander
 st.markdown("""
 <style>
 div[data-testid="stExpander"]:first-of-type details{
     background:rgba(255,255,255,0.03)!important;
-    border:1px solid rgba(255,255,255,0.08)!important;
-    border-radius:14px!important;
-    overflow:hidden!important;
+    border:1px solid rgba(255,255,255,0.09)!important;
+    border-radius:12px!important;
 }
-div[data-testid="stExpander"]:first-of-type details summary{
-    padding:14px 18px!important;
-    font-size:14px!important;
-    font-weight:700!important;
-    color:#f1f5f9!important;
-    font-family:'Syne',sans-serif!important;
-    letter-spacing:0.3px!important;
-}
-div[data-testid="stExpander"]:first-of-type details summary:hover{
-    background:rgba(255,255,255,0.04)!important;
+div[data-testid="stExpander"]:first-of-type summary{
+    padding:12px 16px!important;
 }
 </style>
 """, unsafe_allow_html=True)
-
-with st.expander("\U0001f697  Vehicle Profile  \u2014  tap to set make, model & year", expanded=False):
+with st.expander("\U0001f697  Vehicle Profile  —  tap to set make, model & year", expanded=False):
     sorted_makes = sorted(car_data.keys())
     default_make_index = sorted_makes.index("Lexus") if "Lexus" in sorted_makes else 0
     col1, col2 = st.columns(2)
@@ -478,35 +536,10 @@ with st.expander("\U0001f697  Vehicle Profile  \u2014  tap to set make, model & 
         risk_class, risk_label = "ds-risk-medium", "MODERATE RISK"
     else:
         risk_class, risk_label = "ds-risk-low", "LOW RISK"
-    st.markdown(f"""
-    <div style="display:flex;justify-content:space-between;align-items:center;
-                background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
-                border-radius:12px;padding:12px 16px;margin-top:8px;">
-        <div style="display:flex;gap:24px;">
-            <div>
-                <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            text-transform:uppercase;letter-spacing:1px;">Age</div>
-                <div style="font-size:15px;font-weight:700;color:#f1f5f9;">{age} yrs</div>
-            </div>
-            <div>
-                <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            text-transform:uppercase;letter-spacing:1px;">Mileage</div>
-                <div style="font-size:15px;font-weight:700;color:#f1f5f9;">{v_miles:,} mi</div>
-            </div>
-            <div>
-                <div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;
-                            text-transform:uppercase;letter-spacing:1px;">Vehicle</div>
-                <div style="font-size:15px;font-weight:700;color:#f1f5f9;">{v_year} {v_make} {v_model}</div>
-            </div>
-        </div>
-        <span class="{risk_class}">{risk_label}</span>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"""<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 16px;margin-top:8px;"><div style="display:flex;gap:20px;"><div><div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1px;">Age</div><div style="font-size:15px;font-weight:700;color:#f1f5f9;">{age} yrs</div></div><div><div style="font-size:10px;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1px;">Mileage</div><div style="font-size:15px;font-weight:700;color:#f1f5f9;">{v_miles:,} mi</div></div></div><span class="{risk_class}">{risk_label}</span></div>""", unsafe_allow_html=True)
 
 st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-
-# ==============================================================================
 # ==============================================================================
 # ==============================================================================
 # 14. STAGE 1: INPUT
@@ -514,23 +547,27 @@ st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 if st.session_state.stage == "input":
     st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Step 1 of 3 &nbsp;&mdash;&nbsp; Acoustic Capture</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section">Capture your car sound</div>', unsafe_allow_html=True)
-    st.markdown('<div class="ds-section-sub">Record live using your microphone or upload an existing audio file.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="ds-section-sub">Record live using your phone microphone or upload an existing audio file.</div>', unsafe_allow_html=True)
 
     tab_record, tab_upload = st.tabs(["  Record Live", "  Upload File"])
     audio_data = None
 
-    # ── RECORD LIVE TAB ──────────────────────────────────────────────────────
     with tab_record:
-        st.markdown("""
-        <div style="text-align:center;padding:16px 0 8px;">
-            <div style="font-size:18px;font-weight:800;color:#f1f5f9;font-family:'Syne',sans-serif;margin-bottom:5px;">Tap to record</div>
-            <div style="font-size:11px;color:#475569;font-family:'IBM Plex Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">Hold phone near car sound</div>
-        </div>
-        """, unsafe_allow_html=True)
-        recorded_audio = st.audio_input("Record car sound", label_visibility="collapsed")
+        col_l, col_c, col_r = st.columns([1,2,1])
+        with col_c:
+            st.markdown("""
+            <div style="text-align:center;padding:24px 0 8px;">
+                <div style="font-size:18px;font-weight:800;color:#f1f5f9;
+                            font-family:'Syne',sans-serif;margin-bottom:5px;">Tap to record</div>
+                <div style="font-size:11px;color:#475569;font-family:'IBM Plex Mono',monospace;
+                            letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">
+                    Hold phone near car sound</div>
+            </div>
+            """, unsafe_allow_html=True)
+            recorded_audio = st.audio_input("Record", label_visibility="collapsed")
         if recorded_audio is not None:
             audio_data = recorded_audio
-            st.markdown('<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:8px 0;text-align:center;color:#34d399;font-size:14px;font-weight:700;font-family:IBM Plex Mono,monospace;">&#10003; Recording ready &mdash; tap Run Diagnostic Scan below</div>', unsafe_allow_html=True)
+            st.markdown('''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:10px 16px;margin:8px 0;text-align:center;color:#34d399;font-size:14px;font-weight:700;font-family:'IBM Plex Mono',monospace;">&#10003; Recording captured — tap Run Diagnostic Scan below</div>''', unsafe_allow_html=True)
             if st.session_state.get("uploaded_filename") != "live_recording.wav":
                 temp_path = save_uploaded_file_temporarily(recorded_audio)
                 st.session_state.uploaded_temp_path = temp_path
@@ -538,51 +575,101 @@ if st.session_state.stage == "input":
         else:
             audio_data = None
 
-    # ── UPLOAD FILE TAB ───────────────────────────────────────────────────────
     with tab_upload:
-        uploaded = st.file_uploader(
-            "Drop audio file here — WAV, MP3, M4A",
-            type=["wav", "mp3", "m4a"],
-            label_visibility="visible"
-        )
+        st.markdown('''<div style="border:2px dashed rgba(59,130,246,0.4);border-radius:14px;padding:24px;margin-bottom:12px;text-align:center;"><div style="font-size:32px;margin-bottom:8px">&#128190;</div><div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:4px;">Drop audio file here or browse</div><div style="font-size:12px;color:#475569;font-family:IBM Plex Mono,monospace;letter-spacing:1px;">WAV &middot; MP3 &middot; M4A</div></div>''', unsafe_allow_html=True)
+        uploaded = st.file_uploader("Choose audio file", type=["wav","mp3","m4a"], label_visibility="collapsed")
         if uploaded is not None:
             audio_data = uploaded
-            st.markdown(f'<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:8px 0;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:20px;">&#10003;</span><span style="color:#6ee7b7;font-size:15px;font-weight:700;">{uploaded.name}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'''<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px 18px;margin:8px 0;display:flex;align-items:center;gap:12px;"><span style="color:#34d399;font-size:20px;">&#10003;</span><span style="color:#6ee7b7;font-size:15px;font-weight:700;">{uploaded.name}</span></div>''', unsafe_allow_html=True)
             st.audio(uploaded)
             if st.session_state.get("uploaded_filename") != uploaded.name:
                 temp_path = save_uploaded_file_temporarily(uploaded)
                 st.session_state.uploaded_temp_path = temp_path
                 st.session_state.uploaded_filename = uploaded.name
 
-    # ── RUN SCAN BUTTON ───────────────────────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
-    if audio_data and st.button("Run Diagnostic Scan \u2192"):
+    if audio_data and st.button("Run Diagnostic Scan →"):
         with st.spinner("Processing acoustic signal..."):
             try:
                 if not st.session_state.uploaded_temp_path:
                     raise ValueError("Temporary uploaded file path was not created.")
-                result      = predict_from_audio(st.session_state.uploaded_temp_path)
-                mean_probs  = result["mean_probs"]
-                top_indices = result["top_indices"]
-                top_idx     = int(top_indices[0])
-                top_prob    = float(mean_probs[top_idx])
-                audio_name  = getattr(audio_data, "name", "live_recording.wav")
+
+                result = predict_from_audio(st.session_state.uploaded_temp_path)
+
                 st.session_state.result = {
-                    "mean_probs":mean_probs, "top_indices":top_indices,
-                    "top_idx":top_idx, "top_prob":top_prob,
-                    "num_windows":result["num_windows"],
-                    "duration_sec":result["duration_sec"],
-                    "all_probs":result["all_probs"],
-                    "audio_name":audio_name,
-                    "vehicle":{"make":v_make,"model":v_model,"year":v_year,"miles":v_miles}
+                    **result,
+                    "audio_name": getattr(audio_data, "name", "live_recording.wav"),
+                    "vehicle": {
+                        "make": v_make,
+                        "model": v_model,
+                        "year": v_year,
+                        "miles": v_miles
+                    }
                 }
-                st.session_state.selected_reference_class = encoder.classes_[top_indices[0]]
-                st.session_state.selected_reference_clips = []
-                st.session_state.stage = "low_confidence" if top_prob < CONFIDENCE_THRESHOLD else "refine"
+
+                if result["status"] == "unknown":
+                    st.session_state.selected_reference_class = None
+                    st.session_state.selected_reference_clips = []
+                    st.session_state.stage = "unknown"
+
+                elif result["status"] == "ambiguous":
+                    top_indices = result["top_indices"]
+                    st.session_state.selected_reference_class = encoder.classes_[top_indices[0]]
+                    st.session_state.selected_reference_clips = []
+                    st.session_state.stage = "low_confidence"
+
+                else:
+                    top_indices = result["top_indices"]
+                    st.session_state.selected_reference_class = encoder.classes_[top_indices[0]]
+                    st.session_state.selected_reference_clips = []
+                    st.session_state.stage = "refine"
+
                 st.rerun()
+
             except Exception as e:
                 st.error(f"Prediction failed: {e}")
+elif st.session_state.stage == "unknown":
+    st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Scan Result &nbsp;&mdash;&nbsp; No Reliable Match</div>', unsafe_allow_html=True)
+    st.markdown('<div class="ds-section">No Reliable Match</div>', unsafe_allow_html=True)
 
+    result = st.session_state.result
+    vehicle = result["vehicle"]
+    reason = result.get("reason", "This audio does not clearly match any trained vehicle sound class.")
+    quality = result.get("quality", {})
+
+    st.markdown(f"""
+    <div class="ds-notice">
+        <b>Result:</b> {reason}<br><br>
+        Please upload a clearer vehicle sound and try again.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="ds-card">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+            <div>
+                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Vehicle</div>
+                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">{vehicle['year']} {vehicle['make']} {vehicle['model']}</div>
+            </div>
+            <div>
+                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Mileage</div>
+                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">{vehicle['miles']:,} mi</div>
+            </div>
+            <div>
+                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Audio Duration</div>
+                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">{result.get('duration_sec', 0)} sec</div>
+            </div>
+            <div>
+                <div style="font-size:10px;font-weight:700;color:#475569;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">Signal RMS</div>
+                <div style="font-size:17px;font-weight:800;color:#f1f5f9;">{quality.get('rms', 0):.4f}</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("↺ Try Another Audio"):
+        do_restart()
+        st.rerun()
 elif st.session_state.stage == "low_confidence":
     st.markdown('<div class="ds-step-badge">&#9679;&nbsp; Step 2 of 3 &nbsp;&mdash;&nbsp; Review Candidates</div>', unsafe_allow_html=True)
     st.markdown('<div class="ds-section">Review Candidate Classes</div>', unsafe_allow_html=True)
