@@ -966,19 +966,28 @@ async function send(){{
   ];
 
   try{{
+    const fullContents = [
+      {{role:'user', parts:[{{text: SYS}}]}},
+      {{role:'model', parts:[{{text:'Understood. I am your personal car expert!'}}]}},
+      ...hist
+    ];
     const r = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + KEY,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + KEY,
       {{method:'POST',headers:{{'Content-Type':'application/json'}},
-        body:JSON.stringify({{contents: hist, systemInstruction: {{parts:[{{text: SYS}}]}}}})}}
+        body:JSON.stringify({{contents: fullContents}})}}
     );
     const d = await r.json();
     hideTyping();
+    if(d.error){{
+      addMsg('bot', 'API Error: ' + d.error.message);
+      return;
+    }}
     const rep = d?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not get a response.';
     addMsg('bot', rep);
     hist.push({{role:'model', parts:[{{text: rep}}]}});
   }} catch(e){{
     hideTyping();
-    addMsg('bot', 'Connection error. Please check your internet and try again.');
+    addMsg('bot', 'Error: ' + e.message);
   }}
 }}
 
