@@ -1081,51 +1081,60 @@ function clearChat(){{
     '<div class="empty" id="empty-msg">Ask me anything about your car<br>Engine &#183; Maintenance &#183; Costs &#183; Safety</div>';
 }}
 
-async function sendMessage(){{
+async function sendMessage(){
   const inp = document.getElementById('inp');
   const text = inp.value.trim();
   if(!text) return;
-  if(!GEMINI_KEY) {{
+  if(!GEMINI_KEY){
     addMsg('bot', 'Gemini API key is missing.');
     return;
-  }}
+  }
 
   inp.value = '';
   addMsg('user', text);
-  history.push({{role:'user', parts:[{{text}}]}});
+  history.push({role:'user', parts:[{text}]});
   showTyping();
 
   const ctx = (VEHICLE ? 'Vehicle: ' + VEHICLE + '. ' : '') + (DIAG ? DIAG + '. ' : '');
-  const systemPrompt = 'You are an expert automotive advisor with 30 years experience. ' + ctx +
+  const systemPrompt =
+    'You are an expert automotive advisor with 30 years experience. ' +
+    ctx +
     'Be direct, practical and concise. Max 3-4 sentences. No markdown formatting.';
 
-  const msgs = history.map(m => ({{role: m.role, parts: m.parts}}));
-  msgs.unshift({{role:'user', parts:[{{text: systemPrompt}}]}});
-  msgs.splice(1,0,{{role:'model', parts:[{{text:'Understood. I am your car expert. Ask me anything.'}}]}});
+  const msgs = history.map(m => ({ role: m.role, parts: m.parts }));
+  msgs.unshift({ role:'user', parts:[{ text: systemPrompt }] });
+  msgs.splice(1, 0, { role:'model', parts:[{ text:'Understood. I am your car expert. Ask me anything.' }] });
 
-  try {{
+  try {
     const res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY,
-      {{
-        method:'POST',
-        headers:{{'Content-Type':'application/json'}},
-        body: JSON.stringify({{ contents: msgs }})
-      }}
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_KEY,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: msgs })
+      }
     );
 
     const data = await res.json();
-    removeTyping();
+    hideTyping();
+
+    if (data.error) {
+      addMsg('bot', 'API Error: ' + data.error.message);
+      return;
+    }
 
     const reply =
       data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join(' ').trim()
       || 'Sorry, I could not get a response.';
 
     addMsg('bot', reply);
-    history.push({{role:'model', parts:[{{text: reply}}]}});
-  }} catch(e) {{
-    removeTyping();
+    history.push({ role:'model', parts:[{ text: reply }] });
+
+  } catch (e) {
+    hideTyping();
     addMsg('bot', 'Connection error. Please try again.');
-  }}
+  }
+}
 }}
 </script>
 </body>
