@@ -722,104 +722,110 @@ FORMAT: Return exactly 3 lines each starting with "- ". No headers, no probabili
 
 
 # ==============================================================================
-# 18. FLOATING CHATBOT — Full Car Expert (Gemini powered)
+
+# ==============================================================================
+# 18. CAR EXPERT CHATBOT
 # ==============================================================================
 if "chat_open" not in st.session_state:
     st.session_state.chat_open = False
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Toggle button
-if st.button("💬 Ask Car Expert", key="chat_toggle"):
-    st.session_state.chat_open = not st.session_state.chat_open
+# Always-visible toggle button at bottom
+st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+st.markdown('<div style="border-top:1px solid rgba(255,255,255,0.07);margin-bottom:16px"></div>', unsafe_allow_html=True)
 
-# Floating chat UI via HTML+CSS injected into page
-chat_history_html = ""
-for msg in st.session_state.chat_history:
-    if msg["role"] == "user":
-        chat_history_html += f'''
-        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-            <div style="background:#2563eb;color:#fff;padding:10px 14px;border-radius:16px 16px 4px 16px;
-                        max-width:80%;font-size:14px;font-weight:600;line-height:1.5;">{msg["content"]}</div>
-        </div>'''
-    else:
-        chat_history_html += f'''
-        <div style="display:flex;justify-content:flex-start;margin-bottom:10px;">
-            <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);
-                        color:#cbd5e1;padding:10px 14px;border-radius:16px 16px 16px 4px;
-                        max-width:80%;font-size:14px;font-weight:600;line-height:1.5;">{msg["content"]}</div>
-        </div>'''
+col_btn, col_status = st.columns([2, 5])
+with col_btn:
+    if st.button("💬 Ask Car Expert", key="chat_toggle"):
+        st.session_state.chat_open = not st.session_state.chat_open
+with col_status:
+    if st.session_state.chat_open:
+        st.markdown('<div style="padding:8px 0;font-size:13px;color:#3b82f6;font-family:IBM Plex Mono,monospace;letter-spacing:1px;">CHAT OPEN &#9679;</div>', unsafe_allow_html=True)
 
 if st.session_state.chat_open:
-    st.markdown(f"""
-    <div style="position:fixed;bottom:80px;right:24px;width:360px;z-index:9999;
-                background:linear-gradient(145deg,#0f172a,#0b1220);
-                border:1px solid rgba(59,130,246,0.3);border-radius:20px;
-                box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
-
-        <!-- Header -->
-        <div style="background:rgba(37,99,235,0.15);border-bottom:1px solid rgba(59,130,246,0.2);
+    st.markdown("""
+    <div style="background:linear-gradient(145deg,#0f172a,#0b1220);border:1px solid rgba(59,130,246,0.3);
+                border-radius:20px;overflow:hidden;margin-top:8px;">
+        <div style="background:rgba(37,99,235,0.12);border-bottom:1px solid rgba(59,130,246,0.2);
                     padding:14px 18px;display:flex;align-items:center;gap:10px;">
             <div style="width:36px;height:36px;border-radius:50%;background:#2563eb;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
                 </svg>
             </div>
             <div>
-                <div style="font-size:15px;font-weight:800;color:#f1f5f9;font-family:'Syne',sans-serif;">Car Expert AI</div>
-                <div style="font-size:11px;color:#3b82f6;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;">POWERED BY GEMINI</div>
+                <div style="font-size:15px;font-weight:800;color:#f1f5f9;font-family:Syne,sans-serif;">Car Expert AI</div>
+                <div style="font-size:11px;color:#3b82f6;font-family:IBM Plex Mono,monospace;letter-spacing:1px;">POWERED BY GEMINI</div>
             </div>
             <div style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:#10b981;"></div>
-        </div>
-
-        <!-- Messages -->
-        <div style="height:280px;overflow-y:auto;padding:16px;scroll-behavior:smooth;">
-            {chat_history_html if chat_history_html else
-            '<div style="text-align:center;padding:40px 20px;color:#475569;font-size:13px;font-family:IBM Plex Mono,monospace;">Ask me anything about your car!<br><br>Engine sounds, maintenance tips,<br>fault diagnosis, repair costs...</div>'}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Input area
-    with st.container():
-        st.markdown("""
-        <div style="position:fixed;bottom:80px;right:24px;width:360px;z-index:10000;
-                    margin-top:560px;">
-        </div>
-        """, unsafe_allow_html=True)
+    # Messages
+    if not st.session_state.chat_history:
+        st.markdown('''
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+                    border-top:none;border-radius:0 0 0 0;padding:24px;text-align:center;">
+            <div style="font-size:13px;color:#475569;font-family:IBM Plex Mono,monospace;line-height:2;">
+                Ask me anything about your car<br>
+                Engine sounds &#183; Maintenance &#183; Repair costs &#183; Safety
+            </div>
+        </div>''', unsafe_allow_html=True)
+    else:
+        msgs_html = '<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-top:none;padding:16px;display:flex;flex-direction:column;gap:10px;">'
+        for msg in st.session_state.chat_history:
+            if msg["role"] == "user":
+                msgs_html += f'<div style="display:flex;justify-content:flex-end;"><div style="background:#2563eb;color:#fff;padding:10px 14px;border-radius:16px 16px 4px 16px;max-width:80%;font-size:14px;font-weight:600;line-height:1.5;">{msg["content"]}</div></div>'
+            else:
+                msgs_html += f'<div style="display:flex;justify-content:flex-start;"><div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);color:#cbd5e1;padding:10px 14px;border-radius:16px 16px 16px 4px;max-width:80%;font-size:14px;font-weight:600;line-height:1.5;">{msg["content"]}</div></div>'
+        msgs_html += '</div>'
+        st.markdown(msgs_html, unsafe_allow_html=True)
 
-        col_inp, col_send = st.columns([5, 1])
-        with col_inp:
-            user_msg = st.text_input(
-                "Ask anything about cars...",
-                key="chat_input",
-                label_visibility="collapsed",
-                placeholder="e.g. What causes engine knocking?"
-            )
-        with col_send:
-            send = st.button("Send", key="chat_send")
+    # Suggested chips
+    st.markdown('''
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+                border-top:none;padding:8px 14px;display:flex;gap:6px;flex-wrap:wrap;">
+        <span style="background:rgba(37,99,235,0.1);border:1px solid rgba(59,130,246,0.25);border-radius:20px;
+                     padding:5px 12px;font-size:11px;color:#93c5fd;font-family:monospace;">Is it safe to drive?</span>
+        <span style="background:rgba(37,99,235,0.1);border:1px solid rgba(59,130,246,0.25);border-radius:20px;
+                     padding:5px 12px;font-size:11px;color:#93c5fd;font-family:monospace;">Oil change cost?</span>
+        <span style="background:rgba(37,99,235,0.1);border:1px solid rgba(59,130,246,0.25);border-radius:20px;
+                     padding:5px 12px;font-size:11px;color:#93c5fd;font-family:monospace;">Repair estimate</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+                border-top:none;border-radius:0 0 20px 20px;height:8px;"></div>
+    ''', unsafe_allow_html=True)
 
-        if send and user_msg.strip():
-            # Build context from current diagnosis if available
-            vehicle_ctx = ""
-            diag_ctx = ""
-            if st.session_state.result:
-                v = st.session_state.result.get("vehicle", {})
-                if v:
-                    vehicle_ctx = f"The user's vehicle is a {v.get('year','')} {v.get('make','')} {v.get('model','')} with {v.get('miles',0):,} miles."
-                if st.session_state.selected_reference_class:
-                    diag_ctx = f"The app just diagnosed their car with: {pretty_label(st.session_state.selected_reference_class)}."
+    # Input
+    col_inp, col_send = st.columns([5, 1])
+    with col_inp:
+        user_msg = st.text_input("Ask anything about cars...", key="chat_input",
+                                  label_visibility="collapsed",
+                                  placeholder="e.g. What causes engine knocking?")
+    with col_send:
+        send = st.button("Send", key="chat_send")
 
-            # Build chat history for context
-            history_text = ""
-            for msg in st.session_state.chat_history[-6:]:
-                role = "User" if msg["role"] == "user" else "Assistant"
-                history_text += f"{role}: {msg['content']}\n"
+    if send and user_msg.strip():
+        vehicle_ctx = ""
+        diag_ctx = ""
+        if st.session_state.result:
+            v = st.session_state.result.get("vehicle", {})
+            if v:
+                vehicle_ctx = f"The user's vehicle is a {v.get('year','')} {v.get('make','')} {v.get('model','')} with {v.get('miles',0):,} miles."
+            if st.session_state.selected_reference_class:
+                diag_ctx = f"The app just diagnosed: {pretty_label(st.session_state.selected_reference_class)}."
 
-            prompt = f"""You are an expert automotive advisor and mechanic with 30 years of experience.
-You know everything about cars — engine diagnostics, maintenance, repair costs, buying advice, safety, and more.
-Be direct, practical, and helpful. Keep answers concise but complete.
+        history_text = ""
+        for msg in st.session_state.chat_history[-6:]:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            history_text += f"{role}: {msg['content']}\n"
+
+        prompt = f"""You are an expert automotive advisor with 30 years of experience.
+You know everything about cars — engine diagnostics, maintenance, repair costs, buying advice, and safety.
+Be direct, practical, and helpful. Keep answers concise.
 
 {vehicle_ctx}
 {diag_ctx}
@@ -828,40 +834,17 @@ Conversation so far:
 {history_text}
 User: {user_msg}
 
-Respond as a friendly expert mechanic. Maximum 3-4 sentences unless a detailed explanation is needed."""
+Respond as a friendly expert mechanic. Maximum 3-4 sentences."""
 
-            response = safe_gemini_generate(prompt)
-            if not response:
-                response = "I'm having trouble connecting right now. Please check your Gemini API key and try again."
+        response = safe_gemini_generate(prompt)
+        if not response:
+            response = "I'm having trouble connecting right now. Please try again."
 
-            st.session_state.chat_history.append({"role": "user", "content": user_msg})
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
+        st.session_state.chat_history.append({"role": "user", "content": user_msg})
+        st.session_state.chat_history.append({"role": "assistant", "content": response})
+        st.rerun()
+
+    if st.session_state.chat_history:
+        if st.button("Clear chat", key="chat_clear"):
+            st.session_state.chat_history = []
             st.rerun()
-
-        if st.session_state.chat_history:
-            if st.button("Clear chat", key="chat_clear"):
-                st.session_state.chat_history = []
-                st.rerun()
-
-# Floating toggle button CSS
-st.markdown("""
-<style>
-div[data-testid="stButton"] button[kind="secondary"]:has(+ *) {
-    display:none;
-}
-/* Style the chat toggle button */
-div.chat-fab > button {
-    position:fixed!important;
-    bottom:24px!important;
-    right:24px!important;
-    z-index:9998!important;
-    width:56px!important;
-    height:56px!important;
-    border-radius:50%!important;
-    background:#2563eb!important;
-    box-shadow:0 8px 24px rgba(37,99,235,0.5)!important;
-    font-size:22px!important;
-    padding:0!important;
-}
-</style>
-""", unsafe_allow_html=True)
