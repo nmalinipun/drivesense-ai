@@ -728,281 +728,277 @@ FORMAT: Return exactly 3 lines each starting with "- ". No headers, no probabili
 # ==============================================================================
 # 18. CAR EXPERT CHATBOT — Injected into parent page via JS (truly floating)
 # ==============================================================================
+def render_car_expert_chatbot(vehicle_year, vehicle_make, vehicle_model, vehicle_miles,
+                              selected_reference_class, current_stage):
+    _diag = pretty_label(selected_reference_class) if selected_reference_class else ""
+    _vehicle_str = (
+        f"{vehicle_year} {vehicle_make} {vehicle_model} with {vehicle_miles:,} miles"
+        if vehicle_make else "No vehicle set yet"
+    )
+    _diag_str = f"Diagnosis: {_diag}" if _diag else "No diagnosis yet"
 
-# Gather all available context
-_year  = v_year  if 'v_year'  in dir() else 2008
-_make  = v_make  if 'v_make'  in dir() else ""
-_model = v_model if 'v_model' in dir() else ""
-_miles = v_miles if 'v_miles' in dir() else 0
-_diag  = pretty_label(st.session_state.selected_reference_class) if st.session_state.get("selected_reference_class") else ""
-_stage = st.session_state.get("stage", "input")
+    _gemini_key = ""
+    try:
+        _gemini_key = st.secrets.get("GEMINI_API_KEY", "")
+    except Exception:
+        _gemini_key = os.getenv("GEMINI_API_KEY", "")
 
-_vehicle_str = f"{_year} {_make} {_model} with {_miles:,} miles" if _make else "No vehicle set yet"
-_diag_str    = f"Diagnosis: {_diag}" if _diag else "No diagnosis yet"
-_ctx_label   = f"{_vehicle_str} | {_diag_str}"
-
-_gemini_key = ""
-try:
-    _gemini_key = st.secrets.get("GEMINI_API_KEY", "")
-except Exception:
-    import os as _os
-    _gemini_key = _os.getenv("GEMINI_API_KEY", "")
-
-# Build system prompt based on stage
-if _stage == "final" and _diag:
-    _system = f"""You are an expert automotive advisor with 30 years of experience.
+    if current_stage == "final" and _diag:
+        _system = f"""You are an expert automotive advisor with 30 years of experience.
 The user has a {_vehicle_str}.
-Their car was just diagnosed with: {_diag}.
-Help them with follow-up questions like: nearby repair shops, estimated repair costs, urgency of repair,
-what happens if ignored, DIY vs professional repair, and anything else car-related.
-Be direct, practical, friendly. No markdown. Max 4 sentences."""
-else:
-    _system = f"""You are an expert automotive advisor with 30 years of experience.
+Their car diagnosis is: {_diag}.
+Help with follow-up questions like safety, likely repair, urgency, inspection order, and basic cost expectations.
+Be direct, practical, and short. No markdown. Max 4 sentences."""
+    else:
+        _system = f"""You are an expert automotive advisor with 30 years of experience.
 The user has a {_vehicle_str}.
-{f'Current diagnosis in progress: {_diag}.' if _diag else ''}
-Help them with any car questions — sounds, maintenance, costs, safety, buying advice.
-Be direct, practical, friendly. No markdown. Max 4 sentences."""
+Help with general car questions, maintenance, sound issues, and repair decisions.
+Be direct, practical, and short. No markdown. Max 4 sentences."""
 
-st.components.v1.html(f"""
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8">
-<style>
-*{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:transparent;overflow:hidden}}
-.fab{{position:fixed;bottom:24px;right:24px;width:56px;height:56px;
-      border-radius:50%;background:#2563eb;border:none;cursor:pointer;
-      box-shadow:0 4px 20px rgba(37,99,235,0.55);
-      display:flex;align-items:center;justify-content:center;z-index:2147483647;
-      transition:transform 0.2s,box-shadow 0.2s;font-family:sans-serif}}
-.fab:hover{{transform:scale(1.1);box-shadow:0 8px 28px rgba(37,99,235,0.7)}}
-.badge{{position:absolute;top:-4px;right:-4px;width:18px;height:18px;
-        border-radius:50%;background:#10b981;border:2px solid #0b1220;
-        font-size:10px;color:#fff;display:flex;align-items:center;
-        justify-content:center;font-weight:700}}
-.panel{{position:fixed;bottom:92px;right:24px;width:360px;
-        background:#0f172a;border:1px solid rgba(59,130,246,0.35);
-        border-radius:20px;overflow:hidden;
-        display:flex;flex-direction:column;
-        box-shadow:0 24px 60px rgba(0,0,0,0.8);
-        z-index:2147483646;
-        transition:opacity 0.25s,transform 0.25s;
-        transform:translateY(16px) scale(0.97);opacity:0;pointer-events:none}}
-.panel.open{{transform:translateY(0) scale(1);opacity:1;pointer-events:all}}
-.hdr{{background:rgba(37,99,235,0.15);border-bottom:1px solid rgba(59,130,246,0.2);
-      padding:13px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}}
-.av{{width:36px;height:36px;border-radius:50%;background:#2563eb;
-     display:flex;align-items:center;justify-content:center;flex-shrink:0}}
-.hn{{font-size:15px;font-weight:700;color:#f1f5f9;font-family:sans-serif}}
-.hs{{font-size:10px;color:#3b82f6;letter-spacing:1px;margin-top:2px;font-family:monospace}}
-.odot{{width:8px;height:8px;border-radius:50%;background:#10b981;margin-left:auto;flex-shrink:0}}
-.ctx{{padding:7px 14px;font-size:11px;color:#475569;font-family:monospace;
-      border-bottom:1px solid rgba(255,255,255,0.06);
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}}
-.ctx b{{color:#3b82f6}}
-.msgs{{flex:1;overflow-y:auto;padding:14px;display:flex;
-       flex-direction:column;gap:10px;min-height:240px;max-height:300px}}
-.msgs::-webkit-scrollbar{{width:3px}}
-.msgs::-webkit-scrollbar-thumb{{background:rgba(59,130,246,0.3);border-radius:2px}}
-.mw{{display:flex}}
-.mw.u{{justify-content:flex-end}}
-.mw.b{{justify-content:flex-start}}
-.bbl{{padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.55;
-      max-width:82%;font-family:sans-serif;font-weight:500}}
-.bbl.u{{background:#2563eb;color:#fff;border-radius:16px 16px 4px 16px}}
-.bbl.b{{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);
-        color:#cbd5e1;border-radius:16px 16px 16px 4px}}
-.typ{{display:flex;gap:5px;align-items:center;padding:10px 14px;
-      background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
-      border-radius:16px 16px 16px 4px;width:60px}}
-.typ span{{width:6px;height:6px;border-radius:50%;background:#475569;
-           animation:bop 1.3s infinite}}
-.typ span:nth-child(2){{animation-delay:0.2s}}
-.typ span:nth-child(3){{animation-delay:0.4s}}
-@keyframes bop{{0%,60%,100%{{transform:translateY(0)}}30%{{transform:translateY(-5px)}}}}
-.empty{{padding:28px 16px;text-align:center;color:#334155;
-        font-size:13px;font-family:monospace;line-height:2}}
-.chips{{padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;
-        border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0}}
-.chip{{background:rgba(37,99,235,0.1);border:1px solid rgba(59,130,246,0.25);
-       border-radius:20px;padding:5px 12px;font-size:11px;color:#93c5fd;
-       font-family:monospace;cursor:pointer;transition:all 0.15s;white-space:nowrap}}
-.chip:hover{{background:rgba(37,99,235,0.3);color:#fff;border-color:rgba(59,130,246,0.6)}}
-.inp-row{{display:flex;gap:8px;padding:10px 12px;
-          border-top:1px solid rgba(255,255,255,0.07);
-          flex-shrink:0;align-items:center;background:#0f172a}}
-.inp{{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
-      border-radius:12px;padding:10px 14px;color:#f1f5f9;font-size:13px;
-      outline:none;font-family:sans-serif;transition:border-color 0.2s}}
-.inp:focus{{border-color:rgba(59,130,246,0.5)}}
-.inp::placeholder{{color:#334155}}
-.sbtn{{width:38px;height:38px;border-radius:50%;background:#2563eb;border:none;
-       cursor:pointer;display:flex;align-items:center;justify-content:center;
-       flex-shrink:0;transition:background 0.2s}}
-.sbtn:hover{{background:#1d4ed8}}
-.clr{{font-size:11px;color:#334155;font-family:monospace;cursor:pointer;
-      padding:4px 12px;margin:0 12px 8px;text-align:center;
-      border:1px solid rgba(255,255,255,0.06);border-radius:8px}}
-.clr:hover{{color:#f87171;border-color:rgba(239,68,68,0.3)}}
-</style>
-</head>
-<body>
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
 
-<button class="fab" id="fab" onclick="togglePanel()">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-  </svg>
-  <div class="badge" id="badge" style="display:none">!</div>
-</button>
+    with st.container():
+        st.markdown("""
+        <div style="
+            font-size:12px;
+            font-weight:700;
+            color:#475569;
+            font-family:'IBM Plex Mono',monospace;
+            text-transform:uppercase;
+            letter-spacing:1.4px;
+            margin-bottom:8px;">
+            Car Expert AI
+        </div>
+        """, unsafe_allow_html=True)
 
-<div class="panel" id="panel">
-  <div class="hdr">
-    <div class="av">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-      </svg>
-    </div>
-    <div>
-      <div class="hn">Car Expert AI</div>
-      <div class="hs">POWERED BY GEMINI</div>
-    </div>
-    <div class="odot"></div>
-  </div>
-  <div class="ctx"><b>&#9679;</b> {_ctx_label}</div>
-  <div class="msgs" id="msgs">
-    <div class="empty" id="empty">
-      Ask me anything about your car<br>
-      Engine &middot; Maintenance &middot; Costs &middot; Safety
-    </div>
-  </div>
-  <div class="chips" id="chips">
-    <div class="chip" onclick="chip('Is it safe to drive?')">Safe to drive?</div>
-    <div class="chip" onclick="chip('How much does an oil change cost?')">Oil change?</div>
-    <div class="chip" onclick="chip('Find me a nearby repair shop')">Nearby shops</div>
-    <div class="chip" onclick="chip('What is the estimated repair cost?')">Repair cost</div>
-  </div>
-  <div class="inp-row">
-    <input class="inp" id="inp" placeholder="Ask anything about your car..."
-           onkeydown="if(event.key==='Enter'){{event.preventDefault();send()}}"/>
-    <button class="sbtn" onclick="send()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-        <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
-      </svg>
-    </button>
-  </div>
-  <div class="clr" onclick="clearChat()">Clear conversation</div>
-</div>
+        st.markdown(f"""
+        <div style="
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.08);
+            border-radius:14px;
+            padding:12px 14px;
+            margin-bottom:10px;
+            font-size:12px;
+            color:#93c5fd;
+            font-family:'IBM Plex Mono',monospace;
+            line-height:1.6;">
+            {_vehicle_str}<br>{_diag_str}
+        </div>
+        """, unsafe_allow_html=True)
 
-<script>
-const KEY = "{_gemini_key}";
-const SYS = `{_system.replace('`', "'").replace(chr(10), ' ')}`;
-let hist = [];
-let open = false;
+        st.components.v1.html(f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <style>
+        *{{box-sizing:border-box;margin:0;padding:0}}
+        body{{
+          background:transparent;
+          color:#e2e8f0;
+          font-family:Arial,sans-serif;
+          overflow:auto;
+        }}
+        .wrap{{
+          width:100%;
+          max-width:100%;
+          background:#0f172a;
+          border:1px solid rgba(59,130,246,0.25);
+          border-radius:16px;
+          overflow:hidden;
+        }}
+        .hdr{{
+          padding:12px 14px;
+          background:rgba(37,99,235,0.14);
+          border-bottom:1px solid rgba(59,130,246,0.18);
+          font-weight:700;
+          color:#f1f5f9;
+          font-size:14px;
+        }}
+        .msgs{{
+          height:240px;
+          overflow-y:auto;
+          padding:12px;
+          display:flex;
+          flex-direction:column;
+          gap:10px;
+        }}
+        .empty{{
+          color:#64748b;
+          font-size:13px;
+          line-height:1.8;
+          text-align:center;
+          padding:30px 12px;
+          font-family:monospace;
+        }}
+        .row{{display:flex}}
+        .row.u{{justify-content:flex-end}}
+        .row.b{{justify-content:flex-start}}
+        .bubble{{
+          max-width:82%;
+          padding:10px 12px;
+          border-radius:14px;
+          font-size:13px;
+          line-height:1.55;
+        }}
+        .bubble.u{{
+          background:#2563eb;
+          color:#fff;
+          border-radius:14px 14px 4px 14px;
+        }}
+        .bubble.b{{
+          background:rgba(255,255,255,0.06);
+          border:1px solid rgba(255,255,255,0.08);
+          color:#cbd5e1;
+          border-radius:14px 14px 14px 4px;
+        }}
+        .chips{{
+          padding:10px 12px 0 12px;
+          display:flex;
+          gap:6px;
+          flex-wrap:wrap;
+        }}
+        .chip{{
+          background:rgba(37,99,235,0.10);
+          border:1px solid rgba(59,130,246,0.25);
+          border-radius:20px;
+          padding:6px 10px;
+          font-size:11px;
+          color:#93c5fd;
+          cursor:pointer;
+          font-family:monospace;
+        }}
+        .inpRow{{
+          display:flex;
+          gap:8px;
+          padding:12px;
+        }}
+        .inp{{
+          flex:1;
+          border:none;
+          outline:none;
+          background:rgba(255,255,255,0.06);
+          border:1px solid rgba(255,255,255,0.10);
+          color:#f1f5f9;
+          border-radius:12px;
+          padding:10px 12px;
+          font-size:13px;
+        }}
+        .btn{{
+          border:none;
+          background:#2563eb;
+          color:#fff;
+          border-radius:12px;
+          padding:0 14px;
+          font-weight:700;
+          cursor:pointer;
+        }}
+        .typing{{
+          color:#94a3b8;
+          font-size:12px;
+          font-family:monospace;
+          padding:0 12px 12px 12px;
+          display:none;
+        }}
+        @media (max-width: 600px){{
+          .msgs{{height:200px}}
+          .bubble{{max-width:90%}}
+          .inp{{font-size:12px}}
+          .btn{{padding:0 12px}}
+        }}
+        </style>
+        </head>
+        <body>
+          <div class="wrap">
+            <div class="hdr">Car Expert AI</div>
+            <div class="msgs" id="msgs">
+              <div class="empty" id="empty">Ask anything about your car<br>Safety · Repair · Cost · Maintenance</div>
+            </div>
+            <div class="chips">
+              <div class="chip" onclick="chip('Is it safe to drive?')">Safe to drive?</div>
+              <div class="chip" onclick="chip('What should I inspect first?')">Inspect first?</div>
+              <div class="chip" onclick="chip('What could this repair cost?')">Repair cost?</div>
+            </div>
+            <div class="inpRow">
+              <input id="inp" class="inp" placeholder="Ask a car question..."
+                     onkeydown="if(event.key==='Enter'){{event.preventDefault();send()}}">
+              <button class="btn" onclick="send()">Send</button>
+            </div>
+            <div class="typing" id="typing">Thinking...</div>
+          </div>
 
-function togglePanel(){{
-  open = !open;
-  document.getElementById('panel').classList.toggle('open', open);
-  document.getElementById('badge').style.display = 'none';
-  if(open) setTimeout(scrollBot, 100);
-}}
+          <script>
+          const KEY = "{_gemini_key}";
+          const SYS = `{_system.replace('`', "'").replace(chr(10), ' ')}`;
+          let hist = [];
 
-function scrollBot(){{
-  const m = document.getElementById('msgs');
-  m.scrollTop = m.scrollHeight;
-}}
+          function scrollBot(){{
+            const m = document.getElementById('msgs');
+            m.scrollTop = m.scrollHeight;
+          }}
 
-function clearChat(){{
-  hist = [];
-  document.getElementById('msgs').innerHTML =
-    '<div class="empty" id="empty">Ask me anything about your car<br>Engine &middot; Maintenance &middot; Costs &middot; Safety</div>';
-}}
+          function addMsg(role, text){{
+            const e = document.getElementById('empty');
+            if(e) e.remove();
+            const msgs = document.getElementById('msgs');
+            const row = document.createElement('div');
+            row.className = 'row ' + (role === 'user' ? 'u' : 'b');
+            const b = document.createElement('div');
+            b.className = 'bubble ' + (role === 'user' ? 'u' : 'b');
+            b.textContent = text;
+            row.appendChild(b);
+            msgs.appendChild(row);
+            scrollBot();
+          }}
 
-function addMsg(role, text){{
-  const e = document.getElementById('empty');
-  if(e) e.remove();
-  const msgs = document.getElementById('msgs');
-  const w = document.createElement('div');
-  w.className = 'mw ' + (role==='user'?'u':'b');
-  const b = document.createElement('div');
-  b.className = 'bbl ' + (role==='user'?'u':'b');
-  b.textContent = text;
-  w.appendChild(b);
-  msgs.appendChild(w);
-  scrollBot();
-}}
+          function chip(text){{
+            document.getElementById('inp').value = text;
+            send();
+          }}
 
-function showTyping(){{
-  const msgs = document.getElementById('msgs');
-  const t = document.createElement('div');
-  t.id = 'typ'; t.className = 'typ';
-  t.innerHTML = '<span></span><span></span><span></span>';
-  msgs.appendChild(t);
-  scrollBot();
-}}
+          async function send(){{
+            const inp = document.getElementById('inp');
+            const txt = inp.value.trim();
+            if(!txt || !KEY) return;
 
-function hideTyping(){{
-  const t = document.getElementById('typ');
-  if(t) t.remove();
-}}
+            inp.value = '';
+            addMsg('user', txt);
+            hist.push({{role:'user', parts:[{{text: txt}}]}});
+            document.getElementById('typing').style.display = 'block';
 
-function chip(text){{
-  document.getElementById('inp').value = text;
-  send();
-}}
+            try {{
+              const fullContents = [
+                {{role:'user', parts:[{{text: SYS}}]}},
+                {{role:'model', parts:[{{text:'Understood. I am your car expert.'}}]}},
+                ...hist
+              ];
 
-async function send(){{
-  const inp = document.getElementById('inp');
-  const txt = inp.value.trim();
-  if(!txt || !KEY) return;
-  inp.value = '';
-  addMsg('user', txt);
-  hist.push({{role:'user', parts:[{{text: txt}}]}});
-  showTyping();
+              const r = await fetch(
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + KEY,
+                {{
+                  method:'POST',
+                  headers:{{'Content-Type':'application/json'}},
+                  body:JSON.stringify({{contents: fullContents}})
+                }}
+              );
 
-  const msgs = [
-    {{role:'user', parts:[{{text: SYS}}]}},
-    {{role:'model', parts:[{{text:'Understood. I am your personal car expert. Ask me anything!'}}]}},
-    ...hist
-  ];
+              const d = await r.json();
+              document.getElementById('typing').style.display = 'none';
 
-  try{{
-    const fullContents = [
-      {{role:'user', parts:[{{text: SYS}}]}},
-      {{role:'model', parts:[{{text:'Understood. I am your personal car expert!'}}]}},
-      ...hist
-    ];
-    const r = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + KEY,
-      {{method:'POST',headers:{{'Content-Type':'application/json'}},
-        body:JSON.stringify({{contents: fullContents}})}}
-    );
-    const d = await r.json();
-    hideTyping();
-    if(d.error){{
-      addMsg('bot', 'API Error: ' + d.error.message);
-      return;
-    }}
-    const rep = d?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not get a response.';
-    addMsg('bot', rep);
-    hist.push({{role:'model', parts:[{{text: rep}}]}});
-  }} catch(e){{
-    hideTyping();
-    addMsg('bot', 'Error: ' + e.message);
-  }}
-}}
+              if(d.error){{
+                addMsg('bot', 'API Error: ' + d.error.message);
+                return;
+              }}
 
-// Inject into parent page so it truly floats
-try{{
-  const pd = window.parent.document;
-  if(!pd.getElementById('ds-chat-fab')){{
-    const iframe = document.createElement('iframe');
-    iframe.id = 'ds-chat-fab';
-    iframe.src = 'about:blank';
-    iframe.style.cssText = 'position:fixed;bottom:0;right:0;width:400px;height:500px;border:none;z-index:2147483647;background:transparent;pointer-events:none';
-    pd.body.appendChild(iframe);
-  }}
-}} catch(e){{}}
-</script>
-</body>
-</html>
-""", height=600, scrolling=False)
+              const rep = d?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, no response.';
+              addMsg('bot', rep);
+              hist.push({{role:'model', parts:[{{text: rep}}]}});
+            }} catch(e) {{
+              document.getElementById('typing').style.display = 'none';
+              addMsg('bot', 'Error: ' + e.message);
+            }}
+          }}
+          </script>
+        </body>
+        </html>
+        """, height=390, scrolling=False)
